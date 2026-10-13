@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { adminControlClass, Field, PageHeader } from "@/components/shared/chrome";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { CurrencyDisplay } from "@/components/shared/currency";
-import { DataTable } from "@/components/shared/data-table";
 import { ImageUploader, StringListEditor } from "@/components/shared/editors";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { EVENT_TYPES, type EventPackage } from "@/lib/types";
-import { packagePrice, wait } from "@/lib/format";
+import { formatPeso, packagePrice, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 
 export function PackageAdminList() {
@@ -24,41 +21,74 @@ export function PackageAdminList() {
   const deletePackage = useDemoStore((state) => state.deletePackage);
   const duplicatePackage = useDemoStore((state) => state.duplicatePackage);
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [removeId, setRemoveId] = useState<string | null>(null);
+  const offers = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return packages.filter((item) => !needle || `${item.name} ${item.eventType}`.toLowerCase().includes(needle));
+  }, [packages, query]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Content" title="Packages" description="Public prices come from this list." actions={<Button asChild><Link href="/admin/packages/new">Add Package</Link></Button>} />
-      <DataTable
-        rows={packages}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.name} ${row.eventType}`}
-        searchPlaceholder="Search packages"
-        emptyTitle="No packages found"
-        emptyDescription="Create a package to offer it on the website."
-        emptyAction={<Button asChild><Link href="/admin/packages/new">Add Package</Link></Button>}
-        columns={[
-          { key: "name", header: "Package", sortValue: (row) => row.name, cell: (row) => row.name },
-          { key: "type", header: "Event", sortValue: (row) => row.eventType, cell: (row) => row.eventType },
-          { key: "price", header: "Price", sortValue: (row) => packagePrice(row.price, row.salePrice), cell: (row) => <CurrencyDisplay value={packagePrice(row.price, row.salePrice)} /> },
-          { key: "guests", header: "Guests", sortValue: (row) => row.guestCapacity, cell: (row) => row.guestCapacity },
-          { key: "status", header: "Status", cell: (row) => <StatusBadge status={row.archived ? "ARCHIVED" : row.published ? "Published" : "Unpublished"} /> },
-          {
-            key: "actions",
-            header: "Actions",
-            cell: (row) => (
-              <div className="flex flex-wrap justify-end gap-1">
-                <Button size="sm" variant="outline" asChild><Link href={`/packages/${row.slug}`}>View</Link></Button>
-                <Button size="sm" variant="outline" asChild><Link href={`/admin/packages/${row.id}/edit`}>Edit</Link></Button>
-                <Button size="sm" variant="outline" onClick={() => { const copy = duplicatePackage(row.id); if (copy) { toast.success("Package duplicated."); router.push(`/admin/packages/${copy.id}/edit`); } }}>Duplicate</Button>
-                <Button size="sm" variant="outline" onClick={() => { updatePackage(row.id, { archived: !row.archived, published: row.archived ? row.published : false }); toast.success(row.archived ? "Package restored." : "Package archived."); }}>{row.archived ? "Restore" : "Archive"}</Button>
-                <Button size="sm" variant="outline" onClick={() => { updatePackage(row.id, { published: !row.published, archived: false }); toast.success(row.published ? "Package unpublished." : "Package published."); }}>{row.published ? "Unpublish" : "Publish"}</Button>
-                <Button size="sm" variant="destructive" onClick={() => setRemoveId(row.id)}>Delete</Button>
-              </div>
-            ),
-          },
-        ]}
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Offers"
+        title="Packages"
+        description="The compositions guests can buy. Sale prices replace the listed price on the site."
+        actions={<Button asChild className="bg-neutral-950 text-white hover:bg-neutral-800"><Link href="/admin/packages/new">Add package</Link></Button>}
       />
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Find a package or an occasion"
+        aria-label="Search packages"
+        className="h-11 max-w-md border-black/10 bg-white shadow-none"
+      />
+      {offers.length === 0 ? (
+        <p className="rounded-lg border border-black/5 bg-white px-5 py-10 text-sm text-neutral-500">No packages match that search.</p>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {offers.map((item) => {
+            const price = packagePrice(item.price, item.salePrice);
+            const onSale = item.salePrice != null && item.salePrice > 0 && item.salePrice < item.price;
+            return (
+              <article key={item.id} className="flex flex-col overflow-hidden rounded-lg border border-black/5 bg-white shadow-sm">
+                <Link href={`/packages/${item.slug}`} className="relative block">
+                  <img src={item.image} alt="" className="aspect-[3/2] w-full object-cover" />
+                  <span className="absolute top-3 left-3 rounded-md bg-[#111111] px-2 py-1 text-[10px] font-medium tracking-[0.12em] text-white uppercase">{item.eventType}</span>
+                  {item.archived ? (
+                    <span className="absolute top-3 right-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium tracking-[0.12em] text-neutral-500 uppercase">Archived</span>
+                  ) : !item.published ? (
+                    <span className="absolute top-3 right-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium tracking-[0.12em] text-neutral-500 uppercase">Hidden</span>
+                  ) : null}
+                </Link>
+                <div className="flex flex-1 flex-col p-5">
+                  <h2 className="text-lg font-bold tracking-tight text-neutral-950">{item.name}</h2>
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-500">{item.description}</p>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <p className="text-xl font-bold text-neutral-950 tabular-nums">{formatPeso(price)}</p>
+                    {onSale ? <p className="text-sm text-neutral-400 line-through tabular-nums">{formatPeso(item.price)}</p> : null}
+                    <p className="text-sm text-neutral-400">· {item.guestCapacity} guests</p>
+                  </div>
+                  <ul className="mt-4 space-y-1.5 text-sm text-neutral-600">
+                    {item.inclusions.slice(0, 3).map((inclusion) => (
+                      <li key={inclusion} className="flex gap-2"><span className="text-neutral-300">—</span><span>{inclusion}</span></li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-neutral-400">{item.inclusions.length} inclusions · {item.exclusions.length} left out</p>
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
+                    <Button size="sm" variant="outline" asChild><Link href={`/packages/${item.slug}`}>View</Link></Button>
+                    <Button size="sm" variant="outline" asChild><Link href={`/admin/packages/${item.id}/edit`}>Edit</Link></Button>
+                    <Button size="sm" variant="outline" onClick={() => { const copy = duplicatePackage(item.id); if (copy) { toast.success("Package duplicated."); router.push(`/admin/packages/${copy.id}/edit`); } }}>Duplicate</Button>
+                    <Button size="sm" variant="outline" onClick={() => { updatePackage(item.id, { archived: !item.archived, published: item.archived ? item.published : false }); toast.success(item.archived ? "Package restored." : "Package archived."); }}>{item.archived ? "Restore" : "Archive"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => { updatePackage(item.id, { published: !item.published, archived: false }); toast.success(item.published ? "Package unpublished." : "Package published."); }}>{item.published ? "Unpublish" : "Publish"}</Button>
+                    <Button size="sm" variant="destructive" onClick={() => setRemoveId(item.id)}>Delete</Button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
       <ConfirmDialog
         open={removeId != null}
         onOpenChange={(open) => !open && setRemoveId(null)}

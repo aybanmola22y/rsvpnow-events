@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -21,42 +22,222 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
-import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { INQUIRY_STATUSES, type InquiryStatus } from "@/lib/types";
-import { formatDate, formatTime, wait } from "@/lib/format";
+import { formatDate, formatPeso, formatTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
+import { cn } from "@/lib/utils";
+
+const filters: { label: string; value: string }[] = [
+  { label: "All", value: "" },
+  { label: "New", value: "NEW" },
+  { label: "Contacted", value: "CONTACTED" },
+  { label: "For review", value: "FOR REVIEW" },
+  { label: "Preparing", value: "PROPOSAL PREPARATION" },
+  { label: "Sent", value: "PROPOSAL SENT" },
+  { label: "Accepted", value: "ACCEPTED" },
+  { label: "Declined", value: "DECLINED" },
+  { label: "Archived", value: "ARCHIVED" },
+];
 
 export function InquiryAdminList() {
   const params = useSearchParams();
   const status = params.get("status");
   const inquiries = useDemoStore((state) => state.inquiries);
-  const rows = inquiries.filter((item) => (status ? item.status === status : true));
-  const title = status === "NEW" ? "New inquiries" : status === "ARCHIVED" ? "Archived inquiries" : "All inquiries";
+  const venues = useDemoStore((state) => state.venues);
+  const [query, setQuery] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+
+  const summary = useMemo(() => {
+    const count = (values: InquiryStatus[]) => inquiries.filter((item) => values.includes(item.status)).length;
+    const open = inquiries.filter((item) => item.status !== "ARCHIVED" && item.status !== "DECLINED");
+    const byStatus = INQUIRY_STATUSES.map((item) => ({
+      status: item,
+      count: inquiries.filter((inquiry) => inquiry.status === item).length,
+    })).filter((item) => item.count > 0);
+    const upcoming = [...open].filter((item) => item.eventDate >= today).sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+    return {
+      fresh: count(["NEW"]),
+      review: count(["FOR REVIEW"]),
+      sent: count(["PROPOSAL SENT"]),
+      accepted: count(["ACCEPTED"]),
+      pipeline: open.reduce((sum, item) => sum + item.budget, 0),
+      byStatus,
+      upcoming,
+    };
+  }, [inquiries, today]);
+
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return [...inquiries]
+      .filter((item) => !status || item.status === status)
+      .filter((item) => {
+        if (!needle) return true;
+        const venue = venues.find((entry) => entry.id === item.venuePreference);
+        return `${item.number} ${item.fullName} ${item.company} ${item.eventType} ${item.email} ${item.assignedStaff} ${venue?.name ?? item.venueName}`
+          .toLowerCase()
+          .includes(needle);
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [inquiries, venues, status, query]);
+
+  const titles: Record<string, string> = {
+    NEW: "New inquiries",
+    CONTACTED: "Contacted",
+    "FOR REVIEW": "For review",
+    "PROPOSAL PREPARATION": "Preparing a proposal",
+    "PROPOSAL SENT": "Proposal sent",
+    ACCEPTED: "Accepted",
+    DECLINED: "Declined",
+    ARCHIVED: "Archived inquiries",
+  };
+  const title = status ? titles[status] ?? "Inquiries" : "All inquiries";
+  const peak = Math.max(...summary.byStatus.map((item) => item.count), 1);
 
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Inquiries" title={title} description="Requests from the website and the event builder." />
-      <DataTable
-        rows={rows}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.number} ${row.fullName} ${row.eventType} ${row.email}`}
-        searchPlaceholder="Search inquiries"
-        emptyTitle="No inquiries found"
-        emptyDescription="New requests from the public site will appear here."
-        emptyAction={<Button asChild variant="outline"><Link href="/">Open the website</Link></Button>}
-        columns={[
-          { key: "number", header: "Inquiry Number", sortValue: (row) => row.number, cell: (row) => row.number },
-          { key: "client", header: "Client", sortValue: (row) => row.fullName, cell: (row) => row.fullName },
-          { key: "event", header: "Event", sortValue: (row) => row.eventType, cell: (row) => row.eventType },
-          { key: "date", header: "Event Date", sortValue: (row) => row.eventDate, cell: (row) => formatDate(row.eventDate) },
-          { key: "guests", header: "Guests", sortValue: (row) => row.guestCount, cell: (row) => row.guestCount },
-          { key: "budget", header: "Budget", sortValue: (row) => row.budget, cell: (row) => <CurrencyDisplay value={row.budget} /> },
-          { key: "status", header: "Status", sortValue: (row) => row.status, cell: (row) => <StatusBadge status={row.status} /> },
-          { key: "submitted", header: "Date Submitted", sortValue: (row) => row.createdAt, cell: (row) => formatDate(row.createdAt) },
-          { key: "actions", header: "Actions", cell: (row) => <Button size="sm" variant="outline" asChild><Link href={`/admin/inquiries/${row.id}`}>Open</Link></Button> },
-        ]}
+    <div className="min-w-0 space-y-5">
+      <PageHeader
+        eyebrow="Inquiries"
+        title={title}
+        description={`${formatPeso(summary.pipeline)} still in play across requests that have not been declined or archived.`}
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/admin/inquiries?status=NEW" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">New</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.fresh}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Waiting on a first reply</p>
+        </Link>
+        <Link href="/admin/inquiries?status=FOR REVIEW" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">For review</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.review}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Needs a look before the quote</p>
+        </Link>
+        <Link href="/admin/inquiries?status=PROPOSAL SENT" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Proposal sent</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.sent}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Waiting on a yes</p>
+        </Link>
+        <Link href="/admin/inquiries?status=ACCEPTED" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Accepted</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-[#1f8a4c]">{summary.accepted}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Ready to become a booking</p>
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {filters.map((filter) => {
+          const active = filter.value ? status === filter.value : !status;
+          const count = filter.value ? inquiries.filter((item) => item.status === filter.value).length : inquiries.length;
+          return (
+            <Link
+              key={filter.label}
+              href={filter.value ? `/admin/inquiries?status=${encodeURIComponent(filter.value)}` : "/admin/inquiries"}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium",
+                active ? "bg-neutral-950 text-white" : "border border-black/10 bg-white text-neutral-600 hover:text-neutral-950",
+              )}
+            >
+              {filter.label} {count}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[1.6fr_0.85fr]">
+        <section className="min-w-0 rounded-lg border border-black/5 bg-white shadow-sm">
+          <header className="flex flex-col gap-3 border-b border-neutral-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-950">Requests</h2>
+              <p className="mt-0.5 text-xs text-neutral-400">{rows.length} shown, newest first.</p>
+            </div>
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search name, event, or email"
+              aria-label="Search inquiries"
+              className="h-10 w-full border-black/10 bg-white shadow-none sm:max-w-xs"
+            />
+          </header>
+          {rows.length === 0 ? (
+            <div className="px-5 py-10">
+              <p className="text-sm text-neutral-500">No inquiries match this view.</p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link href="/admin/inquiries">Show all</Link>
+              </Button>
+            </div>
+          ) : (
+            <ul>
+              {rows.map((inquiry) => {
+                const venue = venues.find((item) => item.id === inquiry.venuePreference);
+                return (
+                  <li key={inquiry.id} className="border-b border-neutral-100 last:border-0">
+                    <Link href={`/admin/inquiries/${inquiry.id}`} className="grid gap-3 px-5 py-4 hover:bg-neutral-50 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{inquiry.eventType}</p>
+                        <p className="mt-1 truncate text-sm font-semibold text-neutral-950">{inquiry.fullName}</p>
+                        <p className="mt-0.5 truncate text-sm text-neutral-500">
+                          {formatDate(inquiry.eventDate)} · {inquiry.guestCount} guests · {venue?.name || inquiry.venueName || "Venue not chosen"}
+                        </p>
+                        <p className="mt-1 text-xs text-neutral-400">
+                          {inquiry.assignedStaff || "Unassigned"} · submitted {formatDate(inquiry.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
+                        <p className="text-base font-semibold text-neutral-950 tabular-nums">{formatPeso(inquiry.budget)}</p>
+                        <StatusBadge status={inquiry.status} />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <div className="grid min-w-0 gap-4">
+          <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">By status</h2>
+            <ul className="mt-4 space-y-3">
+              {summary.byStatus.map((item) => (
+                <li key={item.status}>
+                  <Link href={`/admin/inquiries?status=${encodeURIComponent(item.status)}`} className="block">
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium text-neutral-950">{item.status}</span>
+                      <span className="text-neutral-500 tabular-nums">{item.count}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+                      <div className="h-full rounded-full bg-[#c4454d]" style={{ width: `${(item.count / peak) * 100}%` }} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="rounded-lg border border-black/5 bg-white shadow-sm">
+            <header className="px-5 pt-5">
+              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Coming up</h2>
+              <p className="mt-1 text-xs text-neutral-400">Open requests whose date is still ahead.</p>
+            </header>
+            <ul className="mt-2">
+              {summary.upcoming.length === 0 ? (
+                <li className="px-5 py-6 text-sm text-neutral-500">Nothing dated ahead of today.</li>
+              ) : (
+                summary.upcoming.slice(0, 6).map((inquiry) => (
+                  <li key={inquiry.id} className="border-b border-neutral-100 last:border-0">
+                    <Link href={`/admin/inquiries/${inquiry.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
+                      <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{inquiry.eventType}</p>
+                      <p className="mt-1 text-sm font-medium text-neutral-950">{inquiry.fullName}</p>
+                      <p className="mt-1 text-xs text-neutral-400">{formatDate(inquiry.eventDate)} · {inquiry.guestCount} guests</p>
+                    </Link>
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

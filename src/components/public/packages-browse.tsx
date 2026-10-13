@@ -161,13 +161,15 @@ export function PackageDetail({ slug }: { slug: string }) {
         <h2 className="mt-10 font-display text-3xl">Recommended add-ons</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {addOns.map((service) => (
-            <div key={service.id} className="border border-stone-200 bg-white p-5">
+            <div key={service.id} className="flex flex-col border border-stone-200 bg-white p-5">
               <p className="font-display text-2xl">{service.name}</p>
-              <p className="mt-2 text-sm text-stone-600">{service.description}</p>
-              <p className="mt-3 text-sm"><CurrencyDisplay value={service.price} /> · {service.pricingType}</p>
-              <Button asChild variant="outline" className="mt-4">
-                <Link href={`/request-proposal?package=${eventPackage.slug}&service=${service.id}`}>Add to request</Link>
-              </Button>
+              <p className="mt-2 text-sm leading-relaxed text-stone-600">{service.description}</p>
+              <div className="mt-auto pt-4">
+                <p className="text-sm"><CurrencyDisplay value={service.price} /> · {service.pricingType}</p>
+                <Button asChild variant="outline" className="mt-4">
+                  <Link href={`/request-proposal?package=${eventPackage.slug}&service=${service.id}`}>Add to request</Link>
+                </Button>
+              </div>
             </div>
           ))}
         </div>

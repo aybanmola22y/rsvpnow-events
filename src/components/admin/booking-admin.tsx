@@ -24,48 +24,216 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
-import { DataTable } from "@/components/shared/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { RecordPaymentDialog } from "@/components/admin/payment-dialog";
 import { BOOKING_STATUSES, type Booking, type BookingStatus } from "@/lib/types";
-import { formatDate, formatDateTime, formatTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatPeso, formatTime } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
+import { cn } from "@/lib/utils";
 
 export function BookingAdminList() {
   const params = useSearchParams();
   const status = params.get("status");
   const payment = params.get("payment");
+  const when = params.get("when");
   const bookings = useDemoStore((state) => state.bookings);
   const clients = useDemoStore((state) => state.clients);
-  const rows = bookings.filter((booking) => {
-    if (status && booking.status !== status) return false;
-    if (payment === "outstanding" && !(booking.paymentStatus === "Unpaid" || booking.paymentStatus === "Partial")) return false;
-    return true;
-  });
+  const [query, setQuery] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+
+  const summary = useMemo(() => {
+    const ahead = bookings.filter((booking) => booking.eventDate >= today && booking.status !== "Cancelled" && booking.status !== "Completed");
+    const confirmed = bookings.filter((booking) => booking.status === "Confirmed");
+    const byStatus = BOOKING_STATUSES.map((item) => ({
+      status: item,
+      count: bookings.filter((booking) => booking.status === item).length,
+    })).filter((item) => item.count > 0);
+    return {
+      confirmed: confirmed.length,
+      tentative: bookings.filter((booking) => booking.status === "Tentative").length,
+      ahead: ahead.length,
+      held: confirmed.reduce((sum, booking) => sum + booking.total, 0),
+      byStatus,
+      upcoming: [...ahead].sort((a, b) => a.eventDate.localeCompare(b.eventDate)),
+    };
+  }, [bookings, today]);
+
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return [...bookings]
+      .filter((booking) => {
+        if (status && booking.status !== status) return false;
+        if (payment === "outstanding" && !(booking.paymentStatus === "Unpaid" || booking.paymentStatus === "Partial")) return false;
+        if (when === "upcoming" && !(booking.eventDate >= today && booking.status !== "Cancelled" && booking.status !== "Completed")) return false;
+        return true;
+      })
+      .filter((booking) => {
+        if (!needle) return true;
+        const client = clients.find((item) => item.id === booking.clientId);
+        return `${booking.number} ${booking.eventName} ${booking.venueName} ${booking.eventType} ${client?.name ?? ""}`.toLowerCase().includes(needle);
+      })
+      .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+  }, [bookings, clients, status, payment, when, query, today]);
+
+  const titles: Record<string, string> = {
+    Confirmed: "Confirmed",
+    Tentative: "Tentative",
+    Ongoing: "Ongoing",
+    Completed: "Completed",
+    Cancelled: "Cancelled",
+    upcoming: "Coming up",
+    outstanding: "Outstanding balances",
+  };
+  const title = when === "upcoming" ? titles.upcoming : payment === "outstanding" ? titles.outstanding : status ? titles[status] ?? "Bookings" : "Bookings";
+  const activeKey = when === "upcoming" ? "upcoming" : payment === "outstanding" ? "outstanding" : status || "all";
+  const peak = Math.max(...summary.byStatus.map((item) => item.count), 1);
+  const filters = [
+    { label: "All", href: "/admin/bookings", key: "all" },
+    { label: "Ahead", href: "/admin/bookings?when=upcoming", key: "upcoming" },
+    { label: "Outstanding", href: "/admin/bookings?payment=outstanding", key: "outstanding" },
+    ...BOOKING_STATUSES.map((item) => ({ label: item, href: `/admin/bookings?status=${encodeURIComponent(item)}`, key: item })),
+  ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Events" title="Bookings" description="Held dates, balances, and event status." />
-      <DataTable
-        rows={rows}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.number} ${row.eventName} ${row.venueName}`}
-        searchPlaceholder="Search bookings"
-        emptyTitle="No bookings scheduled"
-        emptyDescription="Convert a proposal or clear the filters."
-        emptyAction={<Button asChild variant="outline"><Link href="/admin/proposals">View proposals</Link></Button>}
-        columns={[
-          { key: "number", header: "Booking Number", sortValue: (row) => row.number, cell: (row) => row.number },
-          { key: "client", header: "Client", cell: (row) => clients.find((client) => client.id === row.clientId)?.name ?? "—" },
-          { key: "event", header: "Event", sortValue: (row) => row.eventName, cell: (row) => row.eventName },
-          { key: "venue", header: "Venue", sortValue: (row) => row.venueName, cell: (row) => row.venueName },
-          { key: "date", header: "Date", sortValue: (row) => row.eventDate, cell: (row) => formatDate(row.eventDate) },
-          { key: "total", header: "Total", sortValue: (row) => row.total, cell: (row) => <CurrencyDisplay value={row.total} /> },
-          { key: "pay", header: "Payment Status", cell: (row) => <StatusBadge status={row.paymentStatus} /> },
-          { key: "status", header: "Booking Status", cell: (row) => <StatusBadge status={row.status} /> },
-          { key: "actions", header: "Actions", cell: (row) => <Button size="sm" variant="outline" asChild><Link href={`/admin/bookings/${row.id}`}>Open</Link></Button> },
-        ]}
+    <div className="min-w-0 space-y-5">
+      <PageHeader
+        eyebrow="Events"
+        title={title}
+        description={`${formatPeso(summary.held)} is held on confirmed dates.`}
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/admin/bookings?status=Confirmed" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Confirmed</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-[#1f8a4c]">{summary.confirmed}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Dates held on the book</p>
+        </Link>
+        <Link href="/admin/bookings?status=Tentative" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Tentative</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.tentative}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Held, not yet firm</p>
+        </Link>
+        <Link href="/admin/bookings?when=upcoming" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Ahead</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.ahead}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Still on the calendar</p>
+        </Link>
+        <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Confirmed value</p>
+          <p className="mt-3 text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">{formatPeso(summary.held)}</p>
+          <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Totals on confirmed bookings</p>
+        </article>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {filters.map((filter) => (
+          <Link
+            key={filter.key}
+            href={filter.href}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-xs font-medium",
+              activeKey === filter.key ? "bg-neutral-950 text-white" : "border border-black/10 bg-white text-neutral-600 hover:text-neutral-950",
+            )}
+          >
+            {filter.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[1.6fr_0.85fr]">
+        <section className="min-w-0 rounded-lg border border-black/5 bg-white shadow-sm">
+          <header className="flex flex-col gap-3 border-b border-neutral-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-950">The book</h2>
+              <p className="mt-0.5 text-xs text-neutral-400">{rows.length} shown, soonest date first.</p>
+            </div>
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search event, client, or room"
+              aria-label="Search bookings"
+              className="h-10 w-full border-black/10 bg-white shadow-none sm:max-w-xs"
+            />
+          </header>
+          {rows.length === 0 ? (
+            <div className="px-5 py-10">
+              <p className="text-sm text-neutral-500">No bookings match this view.</p>
+              <Button asChild variant="outline" className="mt-4"><Link href="/admin/bookings">Show all</Link></Button>
+            </div>
+          ) : (
+            <ul>
+              {rows.map((booking) => {
+                const client = clients.find((item) => item.id === booking.clientId);
+                return (
+                  <li key={booking.id} className="border-b border-neutral-100 last:border-0">
+                    <Link href={`/admin/bookings/${booking.id}`} className="grid gap-3 px-5 py-4 hover:bg-neutral-50 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{booking.eventType}</p>
+                        <p className="mt-1 truncate text-sm font-semibold text-neutral-950">{booking.eventName}</p>
+                        <p className="mt-0.5 truncate text-sm text-neutral-500">
+                          {formatDate(booking.eventDate)} · {booking.guestCount} guests · {booking.venueName}
+                        </p>
+                        <p className="mt-1 text-xs text-neutral-400">
+                          {client?.name ?? "Client"} · {formatTime(booking.startTime)}–{formatTime(booking.endTime)}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
+                        <p className="text-base font-semibold text-neutral-950 tabular-nums">{formatPeso(booking.total)}</p>
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <StatusBadge status={booking.status} />
+                          <StatusBadge status={booking.paymentStatus} />
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <div className="grid min-w-0 gap-4">
+          <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">By status</h2>
+            <ul className="mt-4 space-y-3">
+              {summary.byStatus.map((item) => (
+                <li key={item.status}>
+                  <Link href={`/admin/bookings?status=${encodeURIComponent(item.status)}`} className="block">
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium text-neutral-950">{item.status}</span>
+                      <span className="text-neutral-500 tabular-nums">{item.count}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+                      <div className="h-full rounded-full bg-[#c4454d]" style={{ width: `${(item.count / peak) * 100}%` }} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="rounded-lg border border-black/5 bg-white shadow-sm">
+            <header className="px-5 pt-5">
+              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Coming up</h2>
+              <p className="mt-1 text-xs text-neutral-400">Dates still ahead, not cancelled.</p>
+            </header>
+            <ul className="mt-2">
+              {summary.upcoming.length === 0 ? (
+                <li className="px-5 py-6 text-sm text-neutral-500">Nothing is dated ahead of today.</li>
+              ) : (
+                summary.upcoming.slice(0, 6).map((booking) => (
+                  <li key={booking.id} className="border-b border-neutral-100 last:border-0">
+                    <Link href={`/admin/bookings/${booking.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
+                      <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{booking.eventType}</p>
+                      <p className="mt-1 text-sm font-medium text-neutral-950">{booking.eventName}</p>
+                      <p className="mt-1 text-xs text-neutral-400">{formatDate(booking.eventDate)} · {booking.venueName}</p>
+                    </Link>
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

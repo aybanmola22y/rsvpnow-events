@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,12 +19,11 @@ import {
 } from "@/components/ui/select";
 import { adminControlClass, Field, PageHeader } from "@/components/shared/chrome";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { DataTable } from "@/components/shared/data-table";
 import { ImageUploader } from "@/components/shared/editors";
 import { Lightbox } from "@/components/shared/lightbox";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { Testimonial } from "@/lib/types";
-import { formatDateTime, wait } from "@/lib/format";
+import { formatDate, formatDateTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 
 const categories = ["Weddings", "Birthdays", "Debuts", "Corporate", "Conferences", "Celebrations", "Styling"];
@@ -228,27 +228,76 @@ export function SettingsAdmin() {
     toast.success("Settings saved.");
   }
 
+  const preview = form.watch();
+  const control = `${adminControlClass} rounded-md border-black/10 shadow-none`;
+  const socials = [
+    ["Facebook", preview.facebook],
+    ["Instagram", preview.instagram],
+    ["TikTok", preview.tiktok],
+    ["YouTube", preview.youtube],
+  ].filter(([, value]) => value.trim());
+
   return (
-    <div className="space-y-8">
-      <PageHeader eyebrow="Website" title="Website settings" description="These details appear in the public footer and contact page." />
-      <form className="grid gap-4 border border-stone-200 bg-white p-5 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
-        <Field label="Company name"><Input className={adminControlClass} {...form.register("companyName")} /></Field>
-        <Field label="Email"><Input className={adminControlClass} {...form.register("email")} /></Field>
-        <div className="md:col-span-2"><Field label="Company description"><Textarea {...form.register("companyDescription")} /></Field></div>
-        <Field label="Phone"><Input className={adminControlClass} {...form.register("phone")} /></Field>
-        <Field label="Business hours"><Input className={adminControlClass} {...form.register("businessHours")} /></Field>
-        <div className="md:col-span-2"><Field label="Address"><Input className={adminControlClass} {...form.register("address")} /></Field></div>
-        <Field label="Facebook"><Input className={adminControlClass} {...form.register("facebook")} /></Field>
-        <Field label="Instagram"><Input className={adminControlClass} {...form.register("instagram")} /></Field>
-        <Field label="TikTok"><Input className={adminControlClass} {...form.register("tiktok")} /></Field>
-        <Field label="YouTube"><Input className={adminControlClass} {...form.register("youtube")} /></Field>
-        <div className="md:col-span-2"><Field label="Website"><Input className={adminControlClass} {...form.register("website")} /></Field></div>
-        <Button type="submit" disabled={pending}>{pending ? "Saving..." : "Save Settings"}</Button>
-      </form>
-      <div className="border border-destructive/30 bg-white p-5">
-        <h2 className="font-medium">Reset Demo Data</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Restore the original sample venues, inquiries, proposals, and website copy.</p>
-        <Button className="mt-4" variant="destructive" onClick={() => setConfirm(true)}>Reset Demo Data</Button>
+    <div className="space-y-5">
+      <PageHeader eyebrow="Website" title="Website settings" description="What you save here is what the public footer and contact page show." />
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-neutral-950">The house</h2>
+            <p className="mt-1 text-xs text-neutral-400">The name and the sentence visitors read first.</p>
+            <div className="mt-4 grid gap-4">
+              <Field label="Company name" error={form.formState.errors.companyName?.message}>
+                <Input className={control} {...form.register("companyName")} />
+              </Field>
+              <Field label="Company description" error={form.formState.errors.companyDescription?.message}>
+                <Textarea className="rounded-md border-black/10 shadow-none" {...form.register("companyDescription")} />
+              </Field>
+            </div>
+          </section>
+          <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-neutral-950">How to reach the desk</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Field label="Email" error={form.formState.errors.email?.message}><Input className={control} {...form.register("email")} /></Field>
+              <Field label="Phone"><Input className={control} {...form.register("phone")} /></Field>
+              <Field label="Business hours" error={form.formState.errors.businessHours?.message}><Input className={control} {...form.register("businessHours")} /></Field>
+              <div className="md:col-span-2"><Field label="Address" error={form.formState.errors.address?.message}><Input className={control} {...form.register("address")} /></Field></div>
+            </div>
+          </section>
+          <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-neutral-950">On the web</h2>
+            <p className="mt-1 text-xs text-neutral-400">Leave a field empty and it stays off the footer.</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Field label="Facebook"><Input className={control} {...form.register("facebook")} /></Field>
+              <Field label="Instagram"><Input className={control} {...form.register("instagram")} /></Field>
+              <Field label="TikTok"><Input className={control} {...form.register("tiktok")} /></Field>
+              <Field label="YouTube"><Input className={control} {...form.register("youtube")} /></Field>
+              <div className="md:col-span-2"><Field label="Website"><Input className={control} {...form.register("website")} /></Field></div>
+            </div>
+            <Button type="submit" disabled={pending} className="mt-5 bg-neutral-950 text-white hover:bg-neutral-800">{pending ? "Saving..." : "Save settings"}</Button>
+          </section>
+        </form>
+        <div className="grid gap-4">
+          <aside className="rounded-lg bg-[#111111] p-6 text-white">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-white/40 uppercase">Public footer</p>
+            <p className="mt-4 text-2xl font-bold tracking-tight">{preview.companyName || "RSVPNow"}</p>
+            <p className="mt-3 text-sm leading-relaxed text-white/70">{preview.companyDescription}</p>
+            <div className="mt-6 space-y-1 text-sm text-white/80">
+              {preview.address ? <p>{preview.address}</p> : null}
+              {preview.businessHours ? <p>{preview.businessHours}</p> : null}
+              {preview.email ? <p>{preview.email}</p> : null}
+              {preview.phone ? <p>{preview.phone}</p> : null}
+              {preview.website ? <p>{preview.website}</p> : null}
+            </div>
+            {socials.length > 0 ? (
+              <p className="mt-4 text-xs tracking-wide text-white/50 uppercase">{socials.map(([label]) => label).join(" · ")}</p>
+            ) : null}
+          </aside>
+          <section className="rounded-lg border border-red-200 bg-white p-5">
+            <h2 className="text-sm font-semibold text-neutral-950">Reset demo data</h2>
+            <p className="mt-1 text-sm leading-relaxed text-neutral-500">Puts the sample rooms, inquiries, proposals, and this copy back to the original set.</p>
+            <Button className="mt-4" variant="destructive" onClick={() => setConfirm(true)}>Reset demo data</Button>
+          </section>
+        </div>
       </div>
       <ConfirmDialog
         open={confirm}
@@ -275,59 +324,132 @@ export function UsersAdmin() {
   const [form, setForm] = useState({ name: "", email: "", role: "Coordinator" });
 
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Administration" title="Users" />
-      <div className="grid gap-3 border border-stone-200 bg-white p-4 md:grid-cols-4">
-        <Input placeholder="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-        <Input placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-        <Input placeholder="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} />
-        <Button onClick={() => {
-          if (form.name.trim().length < 2 || !form.email.includes("@")) {
-            toast.error("Enter a name and email.");
-            return;
-          }
-          inviteUser(form);
-          toast.success("Invitation recorded (Demo Mode).");
-          setForm({ name: "", email: "", role: "Coordinator" });
-        }}>Invite user</Button>
+    <div className="space-y-5">
+      <PageHeader eyebrow="Desk" title="Users" description="The people who can sign in. Invites stay in this browser. No email is sent." />
+      <div className="grid items-start gap-5 lg:grid-cols-[18rem_1fr]">
+        <form
+          className="rounded-lg border border-black/5 bg-white p-5 shadow-sm"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (form.name.trim().length < 2 || !form.email.includes("@")) {
+              toast.error("Enter a name and email.");
+              return;
+            }
+            inviteUser(form);
+            toast.success("Invitation recorded.");
+            setForm({ name: "", email: "", role: "Coordinator" });
+          }}
+        >
+          <h2 className="text-sm font-semibold text-neutral-950">Invite someone</h2>
+          <p className="mt-1 text-xs text-neutral-400">They appear on the desk as invited until you activate them.</p>
+          <div className="mt-4 space-y-3">
+            <Field label="Name"><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-md border-black/10 shadow-none" /></Field>
+            <Field label="Email"><Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="h-10 rounded-md border-black/10 shadow-none" /></Field>
+            <Field label="Role"><Input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="h-10 rounded-md border-black/10 shadow-none" /></Field>
+          </div>
+          <Button type="submit" className="mt-4 w-full bg-neutral-950 text-white hover:bg-neutral-800">Invite</Button>
+        </form>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {users.map((user) => (
+            <article key={user.id} className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className={`grid size-11 shrink-0 place-items-center rounded-full text-sm font-semibold text-white ${user.status === "Active" ? "bg-[#c4454d]" : "bg-neutral-300"}`}>
+                  {user.name.slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-neutral-950">{user.name}</p>
+                  <p className="text-sm text-neutral-500">{user.role}</p>
+                </div>
+              </div>
+              <p className="mt-4 truncate text-sm text-neutral-500">{user.email}</p>
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+                <StatusBadge status={user.status} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const next = user.status === "Active" ? "Inactive" : "Active";
+                    setUserStatus(user.id, next);
+                    toast.success(`${user.name} marked ${next.toLowerCase()}.`);
+                  }}
+                >
+                  {user.status === "Active" ? "Deactivate" : "Activate"}
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
-      <DataTable
-        rows={users}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.name} ${row.email} ${row.role}`}
-        searchPlaceholder="Search users"
-        emptyTitle="No users found"
-        emptyDescription="Invite a teammate to the demo workspace."
-        columns={[
-          { key: "name", header: "Name", sortValue: (row) => row.name, cell: (row) => row.name },
-          { key: "email", header: "Email", cell: (row) => row.email },
-          { key: "role", header: "Role", cell: (row) => row.role },
-          { key: "status", header: "Status", cell: (row) => <StatusBadge status={row.status} /> },
-          { key: "actions", header: "Actions", cell: (row) => <Button size="sm" variant="outline" onClick={() => { const next = row.status === "Active" ? "Inactive" : "Active"; setUserStatus(row.id, next); toast.success(`User marked ${next}.`); }}>{row.status === "Active" ? "Deactivate" : "Activate"}</Button> },
-        ]}
-      />
     </div>
   );
 }
 
+const entityHref: Record<string, (id: string) => string> = {
+  inquiry: (id) => `/admin/inquiries/${id}`,
+  proposal: (id) => `/admin/proposals/${id}`,
+  booking: (id) => `/admin/bookings/${id}`,
+  gallery: () => "/admin/gallery",
+  client: (id) => `/admin/clients/${id}`,
+};
+
 export function ActivityAdmin() {
   const activity = useDemoStore((state) => state.activity);
+  const [query, setQuery] = useState("");
+  const days = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const visible = [...activity]
+      .filter((entry) => !needle || `${entry.action} ${entry.actor} ${entry.entityType ?? ""}`.toLowerCase().includes(needle))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const groups = new Map<string, typeof visible>();
+    for (const entry of visible) {
+      const day = entry.createdAt.slice(0, 10);
+      groups.set(day, [...(groups.get(day) ?? []), entry]);
+    }
+    return [...groups.entries()];
+  }, [activity, query]);
+
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Administration" title="Activity logs" />
-      <DataTable
-        rows={activity}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.action} ${row.actor}`}
-        searchPlaceholder="Search activity"
-        emptyTitle="No activity yet"
-        emptyDescription="Studio actions will be listed here."
-        columns={[
-          { key: "when", header: "When", sortValue: (row) => row.createdAt, cell: (row) => formatDateTime(row.createdAt) },
-          { key: "actor", header: "Actor", sortValue: (row) => row.actor, cell: (row) => row.actor },
-          { key: "action", header: "Action", cell: (row) => row.action },
-        ]}
+    <div className="space-y-5">
+      <PageHeader eyebrow="Desk" title="Activity" description="What the team and the website changed, newest first." />
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Find a person or an action"
+        aria-label="Search activity"
+        className="h-11 max-w-md rounded-md border-black/10 bg-white shadow-none"
       />
+      {days.length === 0 ? (
+        <p className="rounded-lg border border-black/5 bg-white px-5 py-10 text-sm text-neutral-500">Nothing in the log matches that search.</p>
+      ) : (
+        <div className="space-y-8">
+          {days.map(([day, entries]) => (
+            <section key={day}>
+              <h2 className="text-sm font-semibold text-neutral-950">{formatDate(day)}</h2>
+              <ol className="mt-4 border-l border-neutral-200">
+                {entries.map((entry) => {
+                  const href = entry.entityType && entry.entityId ? entityHref[entry.entityType]?.(entry.entityId) : undefined;
+                  return (
+                    <li key={entry.id} className="relative pb-6 pl-6 last:pb-0">
+                      <span className="absolute top-1.5 -left-[5px] size-2.5 rounded-full bg-[#c4454d]" />
+                      <p className="text-sm font-medium text-neutral-950">{entry.action}</p>
+                      <p className="mt-1 text-xs text-neutral-400">
+                        {entry.actor} · {formatDateTime(entry.createdAt).split(" · ")[1] ?? formatDateTime(entry.createdAt)}
+                        {entry.entityType ? ` · ${entry.entityType}` : ""}
+                        {href ? (
+                          <>
+                            {" · "}
+                            <Link href={href} className="font-medium text-neutral-950 underline-offset-4 hover:underline">Open</Link>
+                          </>
+                        ) : null}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

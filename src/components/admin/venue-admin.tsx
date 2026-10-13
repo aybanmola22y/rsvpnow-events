@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { adminControlClass, Field, PageHeader } from "@/components/shared/chrome";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CurrencyDisplay } from "@/components/shared/currency";
-import { DataTable } from "@/components/shared/data-table";
 import { ImageUploader, StringListEditor } from "@/components/shared/editors";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { EVENT_TYPES, type Venue } from "@/lib/types";
-import { wait } from "@/lib/format";
+import { formatPeso, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 
 export function VenueAdminList() {
@@ -24,47 +22,68 @@ export function VenueAdminList() {
   const deleteVenue = useDemoStore((state) => state.deleteVenue);
   const duplicateVenue = useDemoStore((state) => state.duplicateVenue);
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [removeId, setRemoveId] = useState<string | null>(null);
+  const rooms = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return venues.filter((venue) => !needle || `${venue.name} ${venue.location} ${venue.eventTypes.join(" ")}`.toLowerCase().includes(needle));
+  }, [venues, query]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
-        eyebrow="Content"
+        eyebrow="Rooms"
         title="Venues"
-        description="Rooms published here appear on the public website."
-        actions={<Button asChild><Link href="/admin/venues/new">Add Venue</Link></Button>}
+        description="Each card is a room on the public site. Unpublished rooms stay off the website."
+        actions={<Button asChild className="bg-neutral-950 text-white hover:bg-neutral-800"><Link href="/admin/venues/new">Add venue</Link></Button>}
       />
-      <DataTable
-        rows={venues}
-        rowKey={(row) => row.id}
-        getSearchText={(row) => `${row.name} ${row.location} ${row.eventTypes.join(" ")}`}
-        searchPlaceholder="Search venues"
-        emptyTitle="No venues found"
-        emptyDescription="Add a venue to show it on the public site."
-        emptyAction={<Button asChild><Link href="/admin/venues/new">Add Venue</Link></Button>}
-        columns={[
-          { key: "name", header: "Venue", sortValue: (row) => row.name, cell: (row) => <span className="font-medium">{row.name}</span> },
-          { key: "location", header: "Location", sortValue: (row) => row.location, cell: (row) => row.location },
-          { key: "capacity", header: "Capacity", sortValue: (row) => row.maxCapacity, cell: (row) => `${row.minCapacity}–${row.maxCapacity}` },
-          { key: "price", header: "Starting Price", sortValue: (row) => row.startingPrice, cell: (row) => <CurrencyDisplay value={row.startingPrice} /> },
-          { key: "status", header: "Status", sortValue: (row) => (row.published ? "Published" : "Unpublished"), cell: (row) => <StatusBadge status={row.published ? "Published" : "Unpublished"} /> },
-          { key: "featured", header: "Featured", cell: (row) => row.featured ? "Yes" : "No" },
-          {
-            key: "actions",
-            header: "Actions",
-            cell: (row) => (
-              <div className="flex flex-wrap justify-end gap-1">
-                <Button size="sm" variant="outline" asChild><Link href={`/admin/venues/${row.id}`}>View</Link></Button>
-                <Button size="sm" variant="outline" asChild><Link href={`/admin/venues/${row.id}/edit`}>Edit</Link></Button>
-                <Button size="sm" variant="outline" onClick={() => { const copy = duplicateVenue(row.id); if (copy) { toast.success("Venue duplicated."); router.push(`/admin/venues/${copy.id}/edit`); } }}>Duplicate</Button>
-                <Button size="sm" variant="outline" onClick={() => { updateVenue(row.id, { published: !row.published }); toast.success(row.published ? "Venue unpublished." : "Venue published."); }}>{row.published ? "Unpublish" : "Publish"}</Button>
-                <Button size="sm" variant="destructive" onClick={() => setRemoveId(row.id)}>Delete</Button>
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Find a room or a city"
+        aria-label="Search venues"
+        className="h-11 max-w-md border-black/10 bg-white shadow-none"
+      />
+      {rooms.length === 0 ? (
+        <p className="rounded-lg border border-black/5 bg-white px-5 py-10 text-sm text-neutral-500">No rooms match that search.</p>
+      ) : (
+        <div className="space-y-4">
+          {rooms.map((venue) => (
+            <article key={venue.id} className="overflow-hidden rounded-lg border border-black/5 bg-white shadow-sm md:grid md:grid-cols-[18rem_1fr]">
+              <Link href={`/admin/venues/${venue.id}`} className="relative block min-h-48">
+                <img src={venue.images[0]} alt="" className="h-full min-h-48 w-full object-cover" />
+                <span className="absolute top-3 left-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium tracking-[0.12em] text-neutral-950 uppercase">
+                  {venue.published ? "On the site" : "Hidden"}
+                </span>
+              </Link>
+              <div className="flex flex-col p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-neutral-400">{venue.location}{venue.featured ? " · Featured" : ""}</p>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight text-neutral-950">{venue.name}</h2>
+                  </div>
+                  <p className="text-lg font-semibold text-neutral-950 tabular-nums">From {formatPeso(venue.startingPrice)}</p>
+                </div>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-500">{venue.shortDescription}</p>
+                <p className="mt-3 text-sm text-neutral-950">{venue.minCapacity}–{venue.maxCapacity} guests · {venue.amenities.length} amenities</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {venue.eventTypes.map((type) => (
+                    <span key={type} className="rounded-md bg-[#f4f5f7] px-2 py-1 text-xs text-neutral-600">{type}</span>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
+                  <Button size="sm" variant="outline" asChild><Link href={`/admin/venues/${venue.id}`}>View</Link></Button>
+                  <Button size="sm" variant="outline" asChild><Link href={`/admin/venues/${venue.id}/edit`}>Edit</Link></Button>
+                  <Button size="sm" variant="outline" onClick={() => { const copy = duplicateVenue(venue.id); if (copy) { toast.success("Venue duplicated."); router.push(`/admin/venues/${copy.id}/edit`); } }}>Duplicate</Button>
+                  <Button size="sm" variant="outline" onClick={() => { updateVenue(venue.id, { published: !venue.published }); toast.success(venue.published ? "Venue unpublished." : "Venue published."); }}>{venue.published ? "Unpublish" : "Publish"}</Button>
+                  <Button size="sm" variant="destructive" onClick={() => setRemoveId(venue.id)}>Delete</Button>
+                </div>
               </div>
-            ),
-          },
-        ]}
-      />
+            </article>
+          ))}
+        </div>
+      )}
       <ConfirmDialog
         open={removeId != null}
         onOpenChange={(open) => !open && setRemoveId(null)}
