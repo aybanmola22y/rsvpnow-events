@@ -20,7 +20,8 @@ export function ServicesPage() {
       <Container>
         <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Services</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl">The craft around the room</h1>
-        <p className="mt-4 max-w-2xl text-stone-600">Coordination, catering, styling, and production, priced the way each service is actually sold.</p>
+        <p className="mt-4 max-w-2xl text-stone-600">Coordination, catering, styling, and production for corporate events, team building, and private celebrations.</p>
+        <p className="mt-2 max-w-2xl text-sm text-stone-500">Prices are indicative and subject to event requirements.</p>
         <div className="mt-8 flex flex-wrap gap-2">
           {categories.map((item) => (
             <Button key={item} type="button" variant={item === category ? "default" : "outline"} onClick={() => setCategory(item)}>
@@ -74,16 +75,22 @@ export function GalleryPage() {
         {visible.length === 0 ? (
           <p className="mt-10 text-sm text-muted-foreground">No photographs in this category yet.</p>
         ) : (
-          <div className="mt-8 columns-1 gap-4 sm:columns-2 lg:columns-3">
+          <div className="mt-8 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className="mb-4 block w-full break-inside-avoid"
+                className="group flex h-full w-full flex-col text-left"
                 onClick={() => setIndex(visible.findIndex((image) => image.id === item.id))}
               >
-                <img src={item.src} alt={item.caption} className="w-full object-cover" />
-                <span className="mt-2 block text-left text-sm text-stone-600">{item.caption}</span>
+                <span className="block aspect-[4/3] w-full overflow-hidden bg-stone-100">
+                  <img
+                    src={item.src}
+                    alt={item.caption}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  />
+                </span>
+                <span className="mt-3 block text-sm leading-snug text-stone-600">{item.caption}</span>
               </button>
             ))}
           </div>
@@ -99,39 +106,3 @@ export function GalleryPage() {
   );
 }
 
-export function AboutPage() {
-  const settings = useDemoStore((state) => state.settings);
-  return (
-    <div>
-      <Container className="grid items-center gap-10 py-16 lg:grid-cols-2">
-        <div>
-          <p className="text-[11px] tracking-[0.22em] text-gold uppercase">About</p>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl">You bring the people.</h1>
-          <p className="mt-6 text-base leading-relaxed text-stone-600">{settings.companyDescription}</p>
-          <p className="mt-4 text-base leading-relaxed text-stone-600">
-            Whether it is an intimate gathering or a large-scale celebration, RSVPNow makes every event uniquely yours. We'll take care of the rest.
-          </p>
-        </div>
-        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=80" alt="A wedding celebration" className="h-[480px] w-full object-cover" />
-      </Container>
-      <section className="bg-white py-16">
-        <Container className="grid gap-8 md:grid-cols-3">
-          {[
-            ["Ava Mendoza", "Principal", "Sets the standard and signs every proposal before it goes out."],
-            ["Marco Santos", "Events", "Runs ingress, timing, and the quiet problems that should never reach the host."],
-            ["Liza Cruz", "Clients", "The first conversation, the site visit, and the quotation you can actually compare."],
-          ].map(([name, role, copy]) => (
-            <div key={name}>
-              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">{role}</p>
-              <h2 className="mt-2 font-display text-3xl">{name}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-stone-600">{copy}</p>
-            </div>
-          ))}
-        </Container>
-      </section>
-      <Container className="py-16">
-        <Button asChild className={publicButtonClass}><Link href="/contact">Talk to RSVPNow</Link></Button>
-      </Container>
-    </div>
-  );
-}

@@ -15,8 +15,8 @@ import {
 import { Container, Field, publicButtonClass, publicControlClass } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { ProposalSuccess } from "@/components/public/contact-page";
-import { EVENT_TYPES } from "@/lib/types";
-import { formatDate, formatTime, hoursBetween, packagePrice, wait } from "@/lib/format";
+import { EVENT_RATES, formatRate, startingTotal } from "@/lib/event-rates";
+import { formatDate, formatTime, hoursBetween, wait } from "@/lib/format";
 import { estimateEvent } from "@/lib/pricing";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ const steps = [
   {
     label: "Package",
     title: "The composition",
-    copy: "A published package sets the frame. A custom event is priced from the room and the services.",
+    copy: "A starting price for the occasion, or a custom event priced from the room and the services.",
   },
   {
     label: "Services",
@@ -75,7 +75,7 @@ type Draft = {
 };
 
 const emptyDraft: Draft = {
-  eventType: "Wedding",
+  eventType: EVENT_RATES[0].name,
   eventDate: "",
   startTime: "16:00",
   endTime: "22:00",
@@ -97,13 +97,10 @@ const emptyDraft: Draft = {
 export function BuildEventWizard() {
   const params = useSearchParams();
   const venueList = useDemoStore((state) => state.venues);
-  const packageList = useDemoStore((state) => state.packages);
   const serviceList = useDemoStore((state) => state.services);
   const venues = useMemo(() => venueList.filter((venue) => venue.published), [venueList]);
-  const packages = useMemo(() => packageList.filter((item) => item.published && !item.archived), [packageList]);
   const services = useMemo(() => serviceList.filter((service) => service.active), [serviceList]);
   const submitInquiry = useDemoStore((state) => state.submitInquiry);
-  const initialPackage = packages.find((item) => item.slug === params.get("package"));
   const initialVenue = venues.find((item) => item.slug === params.get("venue"));
   const initialStep = Math.min(5, Math.max(0, Number(params.get("step") ?? 1) - 1));
   const [step, setStep] = useState(Number.isFinite(initialStep) ? initialStep : 0);
@@ -112,10 +109,10 @@ export function BuildEventWizard() {
   const [reference, setReference] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>({
     ...emptyDraft,
-    eventType: initialPackage?.eventType ?? "Wedding",
+    eventType: EVENT_RATES.find((rate) => rate.slug === params.get("event"))?.name ?? EVENT_RATES[0].name,
     venueId: initialVenue?.id ?? "",
-    packageId: initialPackage?.id ?? "",
-    packageMode: initialPackage ? "package" : "package",
+    packageId: "",
+    packageMode: "package",
   });
 
   function patch(partial: Partial<Draft>) {
@@ -126,7 +123,7 @@ export function BuildEventWizard() {
   const guests = Number(draft.guestCount) || 0;
   const hours = hoursBetween(draft.startTime, draft.endTime);
   const venue = venues.find((item) => item.id === draft.venueId) ?? null;
-  const eventPackage = packages.find((item) => item.id === draft.packageId) ?? null;
+  const selectedRate = EVENT_RATES.find((rate) => rate.name === draft.eventType) ?? EVENT_RATES[0];
   const selectedServices = services.filter((service) => draft.serviceIds.includes(service.id));
   const serviceGroups = useMemo(() => {
     const groups: { category: string; items: typeof services }[] = [];
@@ -137,18 +134,22 @@ export function BuildEventWizard() {
     }
     return groups;
   }, [services]);
-  const estimate = useMemo(
-    () =>
-      estimateEvent({
-        venue,
-        clientVenue: draft.venueMode === "client",
-        eventPackage: draft.packageMode === "package" ? eventPackage : null,
-        services: selectedServices,
-        guests,
-        hours,
-      }),
-    [venue, draft.venueMode, draft.packageMode, eventPackage, selectedServices, guests, hours],
-  );
+  const estimate = useMemo(() => {
+    const base = estimateEvent({
+      venue,
+      clientVenue: draft.venueMode === "client",
+      eventPackage: null,
+      services: selectedServices,
+      guests,
+      hours,
+    });
+    const rateAmount = draft.packageMode === "package" ? startingTotal(selectedRate, guests) : null;
+    if (rateAmount == null) return base;
+    return {
+      lines: [{ label: selectedRate.name, amount: rateAmount }, ...base.lines],
+      total: base.total + rateAmount,
+    };
+  }, [venue, draft.venueMode, draft.packageMode, selectedRate, selectedServices, guests, hours]);
 
   function validate(current: number) {
     if (current === 0) {
@@ -162,7 +163,7 @@ export function BuildEventWizard() {
         return "Enter the venue name, address, and location.";
       }
     }
-    if (current === 2 && draft.packageMode === "package" && !draft.packageId) return "Select a package or choose a custom event.";
+    if (current === 2 && draft.packageMode === "package" && !draft.eventType) return "Select an occasion or choose a custom event.";
     if (current === 4) {
       if (draft.fullName.trim().length < 2) return "Enter the client’s full name.";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) return "Enter a valid email address.";
@@ -219,7 +220,7 @@ export function BuildEventWizard() {
   const venueLabel =
     draft.venueMode === "our" ? venue?.name ?? "Not chosen" : draft.venueName.trim() || "Client venue";
   const packageLabel =
-    draft.packageMode === "custom" ? "Custom event" : eventPackage?.name ?? "Not chosen";
+    draft.packageMode === "custom" ? "Custom event" : selectedRate.name;
 
   return (
     <div className="py-16">
@@ -265,7 +266,7 @@ export function BuildEventWizard() {
                     <Field label="Event type">
                       <Select value={draft.eventType} onValueChange={(value) => patch({ eventType: value })}>
                         <SelectTrigger className={publicControlClass}><SelectValue /></SelectTrigger>
-                        <SelectContent>{EVENT_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+                        <SelectContent>{EVENT_RATES.map((rate) => <SelectItem key={rate.id} value={rate.name}>{rate.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </Field>
                     <Field label="Event date">
@@ -345,46 +346,29 @@ export function BuildEventWizard() {
                         )
                       }
                       options={[
-                        { value: "package", label: "Select package" },
+                        { value: "package", label: "Starting price" },
                         { value: "custom", label: "Custom event" },
                       ]}
                     />
                     {draft.packageMode === "package" ? (
-                      <div className="grid gap-3">
-                        {packages.map((item) => {
-                          const selected = draft.packageId === item.id;
-                          const price = packagePrice(item.price, item.salePrice);
-                          const onSale = item.salePrice != null && item.salePrice > 0 && item.salePrice < item.price;
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {EVENT_RATES.map((rate) => {
+                          const selected = draft.eventType === rate.name;
                           return (
                             <button
-                              key={item.id}
+                              key={rate.id}
                               type="button"
-                              onClick={() => patch({ packageId: item.id, eventType: item.eventType })}
+                              onClick={() => patch({ packageId: "", packageMode: "package", eventType: rate.name })}
                               className={cn(
-                                "grid border bg-white text-left sm:grid-cols-[9.5rem_1fr]",
+                                "flex h-full flex-col border bg-white px-4 py-3 text-left",
                                 selected ? "border-ink" : "border-stone-200 hover:border-stone-400",
                               )}
                             >
-                              <img src={item.image} alt="" className="aspect-[3/2] h-full w-full object-cover sm:aspect-auto sm:min-h-36" />
-                              <span className="flex flex-col p-4 sm:p-5">
-                                <span className="flex items-center justify-between gap-3">
-                                  <span className="text-[11px] tracking-[0.18em] text-gold uppercase">{item.eventType}</span>
-                                  {selected ? <SelectedMark /> : null}
-                                </span>
-                                <span className="mt-2 font-display text-2xl leading-none">{item.name}</span>
-                                <span className="mt-2 line-clamp-2 text-sm leading-relaxed text-stone-600">{item.description}</span>
-                                <span className="mt-4 flex items-baseline justify-between gap-3 text-sm">
-                                  <span className="text-stone-500">Up to {item.guestCapacity} guests</span>
-                                  <span>
-                                    {onSale ? (
-                                      <span className="mr-2 text-stone-400 line-through">
-                                        <CurrencyDisplay value={item.price} />
-                                      </span>
-                                    ) : null}
-                                    <CurrencyDisplay value={price} />
-                                  </span>
-                                </span>
+                              <span className="flex items-start justify-between gap-3">
+                                <span className="font-display text-2xl leading-tight">{rate.name}</span>
+                                {selected ? <SelectedMark /> : null}
                               </span>
+                              <span className="mt-2 text-sm">{formatRate(rate)}</span>
                             </button>
                           );
                         })}

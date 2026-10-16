@@ -14,16 +14,16 @@ import {
 import { Container, publicButtonClass, publicControlClass } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { EmptyState } from "@/components/shared/empty-state";
+import { EVENT_RATES, RATE_GROUPS, formatRate } from "@/lib/event-rates";
 import { EVENT_TYPES } from "@/lib/types";
-import { packagePrice } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
 const priceBands = [
   { id: "any", label: "Any price" },
-  { id: "under-50", label: "Under ₱50,000" },
-  { id: "50-80", label: "₱50,000 – ₱80,000" },
-  { id: "over-80", label: "Over ₱80,000" },
+  { id: "under-50", label: "Under S$50,000" },
+  { id: "50-80", label: "S$50,000 – S$80,000" },
+  { id: "over-80", label: "Over S$80,000" },
 ];
 
 export function VenuesPage() {
@@ -145,11 +145,6 @@ export function VenuesPage() {
 
 export function VenueDetail({ slug }: { slug: string }) {
   const venue = useDemoStore((state) => state.venues.find((item) => item.slug === slug && item.published));
-  const packageList = useDemoStore((state) => state.packages);
-  const packages = useMemo(
-    () => packageList.filter((item) => item.published && !item.archived && venue && item.venueIds.includes(venue.id)),
-    [packageList, venue],
-  );
   const [active, setActive] = useState(0);
   if (!venue) {
     return (
@@ -208,14 +203,14 @@ export function VenueDetail({ slug }: { slug: string }) {
             </dl>
             <div className="mt-8 flex flex-col gap-3">
               <Button asChild className={cn(publicButtonClass, "w-full")}>
-                <Link href={`/request-proposal?venue=${venue.slug}`}>Request Proposal</Link>
+                <Link href={`/request-proposal?venue=${venue.slug}`}>Request a quotation</Link>
               </Button>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Button asChild variant="outline" className={cn(publicButtonClass, "w-full")}>
                   <Link href={`/build-event?venue=${venue.slug}`}>Build Event</Link>
                 </Button>
                 <Button asChild variant="outline" className={cn(publicButtonClass, "w-full")}>
-                  <Link href={`/packages?venue=${venue.slug}`}>View Packages</Link>
+                  <Link href="/packages">Starting prices</Link>
                 </Button>
               </div>
             </div>
@@ -236,32 +231,34 @@ export function VenueDetail({ slug }: { slug: string }) {
       </Container>
       <section className="bg-white py-16">
         <Container>
-          <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Packages</p>
-          <h2 className="mt-3 font-display text-4xl md:text-5xl">Available at this room</h2>
-          {packages.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">No published packages are linked to this venue yet.</p>
-          ) : (
-            <div className="mt-10 grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {packages.map((item) => (
-                <article key={item.id} className="flex h-full flex-col border border-stone-200">
-                  <Link href={`/packages/${item.slug}`} className="block overflow-hidden">
-                    <img src={item.image} alt={item.name} className="aspect-[3/2] w-full object-cover" />
-                  </Link>
-                  <div className="flex flex-1 flex-col p-6">
-                    <p className="text-[11px] tracking-[0.18em] text-gold uppercase">{item.eventType}</p>
-                    <h3 className="mt-2 font-display text-3xl">{item.name}</h3>
-                    <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-stone-600">{item.description}</p>
-                    <p className="mt-4 text-sm">
-                      From <CurrencyDisplay value={packagePrice(item.price, item.salePrice)} />
-                    </p>
-                    <Button asChild variant="outline" className={cn(publicButtonClass, "mt-5 w-fit")}>
-                      <Link href={`/packages/${item.slug}`}>View Package</Link>
-                    </Button>
-                  </div>
-                </article>
-              ))}
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Starting prices</p>
+              <h2 className="mt-3 font-display text-4xl">What the event can start from</h2>
             </div>
-          )}
+            <Button asChild variant="outline" className={publicButtonClass}>
+              <Link href="/packages">See all prices</Link>
+            </Button>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {RATE_GROUPS.map((group) => (
+              <div key={group.title} className="border border-stone-200 p-4">
+                <p className="text-[11px] tracking-[0.18em] text-gold uppercase">{group.title}</p>
+                <ul className="mt-2.5">
+                  {group.ids.map((id) => {
+                    const rate = EVENT_RATES.find((item) => item.id === id);
+                    if (!rate) return null;
+                    return (
+                      <li key={rate.id} className="flex items-baseline justify-between gap-3 border-t border-stone-200 py-1.5 first:border-t-0 first:pt-0">
+                        <span className="text-sm">{rate.shortName}</span>
+                        <span className="shrink-0 text-sm tabular-nums text-stone-600">{formatRate(rate)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         </Container>
       </section>
     </div>

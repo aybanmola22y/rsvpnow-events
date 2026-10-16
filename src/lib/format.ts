@@ -1,12 +1,11 @@
 import { format, isValid, parseISO } from "date-fns";
 
 export function formatPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
+  const amount = new Intl.NumberFormat("en-SG", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number.isFinite(value) ? value : 0);
+  return `S$${amount}`;
 }
 
 export function formatDate(value: string) {

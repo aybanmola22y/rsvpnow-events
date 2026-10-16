@@ -26,7 +26,7 @@ import type { Testimonial } from "@/lib/types";
 import { formatDate, formatDateTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 
-const categories = ["Weddings", "Birthdays", "Debuts", "Corporate", "Conferences", "Celebrations", "Styling"];
+const categories = ["Corporate", "Team building", "Ballrooms", "Celebrations", "Setups"];
 
 export function GalleryAdmin() {
   const gallery = useDemoStore((state) => state.gallery);

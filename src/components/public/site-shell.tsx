@@ -12,11 +12,8 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/venues", label: "Venues" },
-  { href: "/packages", label: "Packages" },
   { href: "/services", label: "Services" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -56,7 +53,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild className={cn(publicButtonClass, "hidden sm:inline-flex")}>
-              <Link href="/request-proposal">Request Proposal</Link>
+              <Link href="/request-proposal">Request a quotation</Link>
             </Button>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -81,7 +78,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                   ))}
                   <Button asChild className={publicButtonClass}>
                     <Link href="/request-proposal" onClick={() => setOpen(false)}>
-                      Request Proposal
+                      Request a quotation
                     </Link>
                   </Button>
                 </div>
@@ -95,16 +92,16 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
         <Container className="grid gap-10 py-16 md:grid-cols-4">
           <div className="md:col-span-2">
             <p className="font-display text-4xl">{settings.companyName}</p>
+            <p className="mt-3 font-display text-2xl text-stone-200">An event shouldn’t cost an event.</p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-stone-300">{settings.companyDescription}</p>
           </div>
           <div>
             <p className="text-[11px] tracking-[0.18em] text-gold uppercase">Visit</p>
             <div className="mt-4 flex flex-col gap-2 text-sm text-stone-300">
-              <Link href="/venues" className="hover:text-white">Venues</Link>
-              <Link href="/packages" className="hover:text-white">Packages</Link>
+              <Link href="/services" className="hover:text-white">Services</Link>
               <Link href="/gallery" className="hover:text-white">Gallery</Link>
-              <Link href="/build-event" className="hover:text-white">Build Your Event</Link>
-              <Link href="/request-proposal" className="hover:text-white">Request Proposal</Link>
+              <Link href="/contact" className="hover:text-white">Contact</Link>
+              <Link href="/request-proposal" className="hover:text-white">Request a quotation</Link>
             </div>
           </div>
           <div>

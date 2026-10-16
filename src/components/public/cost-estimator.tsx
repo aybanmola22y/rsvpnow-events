@@ -4,139 +4,143 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
+import { EVENT_RATES, RATE_GROUPS, formatRate, shortRate, startingTotal } from "@/lib/event-rates";
 import { cn } from "@/lib/utils";
 
-type EstimateType = {
-  id: string;
-  label: string;
-  proposalType: string;
-  low: number;
-  high: number;
-};
-
-const types: EstimateType[] = [
-  { id: "team-building", label: "Team building", proposalType: "Company Party", low: 50, high: 80 },
-  { id: "dinner-dance", label: "Dinner and dance", proposalType: "Company Party", low: 90, high: 150 },
-  { id: "family-day", label: "Family day", proposalType: "Private Celebration", low: 40, high: 70 },
-  { id: "conference", label: "Conference", proposalType: "Conference", low: 65, high: 110 },
-  { id: "gala", label: "Gala dinner", proposalType: "Corporate", low: 120, high: 200 },
-  { id: "virtual", label: "Virtual or hybrid", proposalType: "Seminar", low: 25, high: 45 },
-];
-
-const shares = [
-  { label: "Planning and coordination", share: 0.15 },
-  { label: "Program and activities", share: 0.25 },
-  { label: "Catering and hospitality", share: 0.4 },
-  { label: "Venue and production", share: 0.2 },
-];
-
-function volumeFactor(guests: number) {
-  if (guests < 30) return 1.12;
-  if (guests < 80) return 1.05;
-  if (guests <= 150) return 1;
-  if (guests < 400) return 0.94;
-  return 0.88;
-}
-
 function money(value: number) {
-  return `$${Math.round(value).toLocaleString("en-SG")}`;
+  return `S$${Math.round(value).toLocaleString("en-SG")}`;
 }
 
 export function CostEstimator() {
-  const [typeId, setTypeId] = useState(types[0].id);
+  const [groupIndex, setGroupIndex] = useState(0);
+  const [typeId, setTypeId] = useState(EVENT_RATES[0].id);
   const [guests, setGuests] = useState(100);
-  const [open, setOpen] = useState(false);
-  const selected = types.find((item) => item.id === typeId) ?? types[0];
 
-  const estimate = useMemo(() => {
-    const factor = volumeFactor(guests);
-    const lowEach = selected.low * factor;
-    const highEach = selected.high * factor;
-    const low = lowEach * guests;
-    const high = highEach * guests;
-    return {
-      lowEach,
-      highEach,
-      low,
-      high,
-      lines: shares.map((part) => ({
-        label: part.label,
-        low: low * part.share,
-        high: high * part.share,
-      })),
-    };
-  }, [guests, selected]);
+  const group = RATE_GROUPS[groupIndex];
+  const groupRates = useMemo(
+    () => group.ids.map((id) => EVENT_RATES.find((item) => item.id === id)!).filter(Boolean),
+    [group],
+  );
+  const selected = EVENT_RATES.find((item) => item.id === typeId) ?? EVENT_RATES[0];
+  const total = useMemo(() => startingTotal(selected, guests), [guests, selected]);
+  const proposalHref = `/request-proposal?event=${encodeURIComponent(selected.name)}&estimate=${encodeURIComponent(formatRate(selected))}&guests=${guests}${total == null ? "" : `&budget=${total}`}`;
 
-  const proposalHref = `/request-proposal?event=${encodeURIComponent(selected.proposalType)}&estimate=${encodeURIComponent(selected.label)}&guests=${guests}&budget=${Math.round((estimate.low + estimate.high) / 2)}`;
+  function pickGroup(index: number) {
+    setGroupIndex(index);
+    const first = RATE_GROUPS[index].ids[0];
+    if (first) setTypeId(first);
+  }
+
+  function nudgeGuests(delta: number) {
+    setGuests((current) => Math.min(2000, Math.max(10, current + delta)));
+  }
 
   return (
-    <section className="border-y border-stone-200 bg-white py-20 md:py-28">
+    <section className="border-y border-stone-200 bg-ivory py-16 md:py-20">
       <Container>
-        <div className="grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
-          <div>
+        <div className="overflow-hidden border border-stone-200 bg-white lg:grid lg:grid-cols-[1fr_1.05fr]">
+          <div className="flex flex-col bg-ink px-6 py-8 text-ivory md:px-9 md:py-9">
             <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Estimate</p>
-            <h2 className="mt-3 font-display text-4xl leading-[1.05] md:text-6xl">
-              A {selected.label.toLowerCase()} for {guests.toLocaleString("en-SG")} guests.
+            <h2 className="mt-3 font-display text-3xl leading-[1.08] text-balance md:text-4xl">
+              {selected.shortName}
             </h2>
-            <p className="mt-8 font-display text-3xl md:text-4xl">
-              {money(estimate.low)} to {money(estimate.high)}
+            <p className="mt-1 text-sm tracking-wide text-white/55">
+              for {guests.toLocaleString("en-SG")} guests
             </p>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-600">
-              About {money(estimate.lowEach)} to {money(estimate.highEach)} a person, in SGD. This is a starting figure. The quotation is written after we know the date and the room.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild className={publicButtonClass}>
-                <Link href={proposalHref}>Request a proposal</Link>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className={publicButtonClass}
-                aria-expanded={open}
-                onClick={() => setOpen((value) => !value)}
-              >
-                {open ? "Hide the breakdown" : "Read the breakdown"}
-              </Button>
+
+            <div className="mt-8 border-t border-white/15 pt-6">
+              <p className="text-[11px] tracking-[0.18em] text-white/40 uppercase">Starting from</p>
+              <p className="mt-2 font-display text-5xl leading-none tracking-tight md:text-[3.5rem]">
+                {total == null ? "Custom" : money(total)}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-white/60">
+                {formatRate(selected)}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/40">
+                Indicative, and subject to event requirements.
+              </p>
             </div>
-            {open ? (
-              <ul className="mt-10 border-t border-stone-200">
-                {estimate.lines.map((line) => (
-                  <li key={line.label} className="flex items-baseline justify-between gap-6 border-b border-stone-200 py-4 text-sm">
-                    <span>{line.label}</span>
-                    <span className="shrink-0">{money(line.low)} – {money(line.high)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+
+            <Button
+              asChild
+              className={cn(publicButtonClass, "mt-8 w-full bg-white text-ink hover:bg-stone-100 sm:w-auto")}
+            >
+              <Link href={proposalHref}>Request a quotation</Link>
+            </Button>
           </div>
-          <div className="lg:pt-10">
-            <p className="text-[11px] tracking-[0.22em] text-gold uppercase">The occasion</p>
-            <ul className="mt-4">
-              {types.map((item, index) => {
-                const active = item.id === selected.id;
-                return (
-                  <li key={item.id} className="border-b border-stone-200">
+
+          <div className="flex flex-col gap-8 px-5 py-7 md:px-8 md:py-9">
+            <div>
+              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">The occasion</p>
+              <div className="mt-3 grid grid-cols-2 border border-stone-200">
+                {RATE_GROUPS.map((item, index) => {
+                  const active = index === groupIndex;
+                  return (
                     <button
+                      key={item.title}
                       type="button"
-                      onClick={() => setTypeId(item.id)}
+                      onClick={() => pickGroup(index)}
                       className={cn(
-                        "flex w-full items-baseline gap-4 py-4 text-left transition",
-                        active ? "text-ink" : "text-stone-400 hover:text-ink",
+                        "h-11 text-[11px] tracking-[0.14em] uppercase transition",
+                        active ? "bg-ink text-white" : "bg-white text-stone-500 hover:text-ink",
                       )}
                     >
-                      <span className="w-8 text-[11px] tracking-[0.16em] text-gold">0{index + 1}</span>
-                      <span className={cn("font-display text-3xl", active && "underline decoration-gold decoration-1 underline-offset-8")}>
-                        {item.label}
-                      </span>
+                      {item.title === "Celebrations & more" ? "Celebrations" : item.title}
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="mt-10">
-              <div className="flex items-end justify-between gap-4">
+                  );
+                })}
+              </div>
+
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {groupRates.map((rate) => {
+                  const active = rate.id === selected.id;
+                  return (
+                    <li key={rate.id}>
+                      <button
+                        type="button"
+                        onClick={() => setTypeId(rate.id)}
+                        className={cn(
+                          "flex h-full w-full flex-col border px-3 py-2.5 text-left transition",
+                          active
+                            ? "border-ink bg-ink text-white"
+                            : "border-stone-200 bg-white hover:border-stone-400",
+                        )}
+                      >
+                        <span className="text-sm leading-snug">{rate.shortName}</span>
+                        <span className={cn("mt-1 text-xs tabular-nums", active ? "text-white/70" : "text-stone-500")}>
+                          {shortRate(rate)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="border-t border-stone-200 pt-6">
+              <div className="flex items-center justify-between gap-4">
                 <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Guests</p>
-                <p className="font-display text-4xl">{guests.toLocaleString("en-SG")}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Fewer guests"
+                    onClick={() => nudgeGuests(-10)}
+                    className="flex h-9 w-9 items-center justify-center border border-stone-300 text-lg leading-none text-ink hover:border-ink"
+                  >
+                    −
+                  </button>
+                  <p className="min-w-16 text-center font-display text-3xl leading-none">
+                    {guests.toLocaleString("en-SG")}
+                  </p>
+                  <button
+                    type="button"
+                    aria-label="More guests"
+                    onClick={() => nudgeGuests(10)}
+                    className="flex h-9 w-9 items-center justify-center border border-stone-300 text-lg leading-none text-ink hover:border-ink"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <input
                 type="range"
@@ -146,7 +150,7 @@ export function CostEstimator() {
                 value={guests}
                 onChange={(event) => setGuests(Number(event.target.value))}
                 aria-label="Number of guests"
-                className="mt-4 w-full accent-[#9c7a45]"
+                className="mt-5 w-full accent-[#b7a48a]"
               />
               <div className="mt-2 flex justify-between text-xs text-stone-400">
                 <span>10</span>

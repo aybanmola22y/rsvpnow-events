@@ -128,7 +128,7 @@ export const seedServices: Service[] = [
     slug: "floral-design",
     description:
       "A focused floral scheme for the ceremony, cake, and a handful of tables, designed to match the room rather than hide it.",
-    image: photos.vows,
+    image: photos.garden,
     price: 15000,
     pricingType: "Fixed",
     category: "Design",

@@ -16,11 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
-import { Container, Field, publicButtonClass, publicControlClass } from "@/components/shared/chrome";
+import { Container, publicButtonClass } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { ProposalSuccess } from "@/components/public/contact-page";
-import { EVENT_TYPES } from "@/lib/types";
-import { formatDate, formatTime, packagePrice, wait } from "@/lib/format";
+import { EVENT_RATES, formatRate } from "@/lib/event-rates";
+import { formatDate, formatTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +46,9 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const fillControl =
+  "h-12 w-full rounded-none border border-stone-300 bg-white px-3 text-base text-ink shadow-none placeholder:text-stone-400 focus-visible:border-ink focus-visible:ring-0";
 
 export function RequestProposalForm() {
   const params = useSearchParams();
@@ -130,6 +133,7 @@ export function RequestProposalForm() {
   const selectedServices = services.filter((service) => (values.serviceIds ?? serviceIds).includes(service.id));
   const venueChoice = venues.find((item) => item.id === values.venuePreference);
   const packageChoice = packages.find((item) => item.id === values.packageId);
+  const selectedRate = EVENT_RATES.find((rate) => rate.name === values.eventType);
   const venueLabel =
     values.venuePreference === "client"
       ? "Your own venue"
@@ -169,55 +173,62 @@ export function RequestProposalForm() {
               <SideFact label="Occasion" value={values.eventType ? `${values.eventType} · ${values.guestCount || "—"} guests` : "Not chosen"} />
               <SideFact label="When" value={whenLabel} />
               <SideFact label="Venue" value={venueLabel} />
-              <SideFact label="Package" value={packageChoice?.name ?? "Not sure yet"} />
+              <SideFact label="Starting" value={selectedRate ? formatRate(selectedRate) : packageChoice?.name ?? "Not chosen"} />
               <SideFact label="Added" value={selectedServices.length ? `${selectedServices.length} services` : "None"} />
             </dl>
           </div>
-          <div className="border border-stone-200 bg-white p-5 md:p-6">
-            <div className="grid gap-8 xl:grid-cols-2 xl:gap-10">
-              <FormSection eyebrow="01" title="Who we write to" className="mt-0 border-0 pt-0">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Full name" error={form.formState.errors.fullName?.message}>
-                    <Input className={publicControlClass} {...form.register("fullName")} />
-                  </Field>
-                  <Field label="Company" hint="Optional">
-                    <Input className={publicControlClass} {...form.register("company")} />
-                  </Field>
-                  <Field label="Email" error={form.formState.errors.email?.message}>
-                    <Input type="email" className={publicControlClass} {...form.register("email")} />
-                  </Field>
-                  <Field label="Phone" error={form.formState.errors.phone?.message}>
-                    <Input className={publicControlClass} {...form.register("phone")} />
-                  </Field>
+          <div className="border border-stone-200 bg-white">
+            <div className="grid gap-10 bg-[#f7f6f4] p-5 md:p-8 xl:grid-cols-2 xl:gap-16">
+              <FormSection eyebrow="01" title="Who we write to" lede="The quotation is addressed to this person." className="mt-0 border-0 pt-0">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Fill label="Full name" error={form.formState.errors.fullName?.message}>
+                    <Input autoComplete="name" placeholder="Alex Tan" className={fillControl} {...form.register("fullName")} />
+                  </Fill>
+                  <Fill label="Company" hint="Optional">
+                    <Input autoComplete="organization" placeholder="Company or family" className={fillControl} {...form.register("company")} />
+                  </Fill>
+                  <Fill label="Email" error={form.formState.errors.email?.message}>
+                    <Input type="email" autoComplete="email" placeholder="name@company.com" className={fillControl} {...form.register("email")} />
+                  </Fill>
+                  <Fill label="Phone" error={form.formState.errors.phone?.message}>
+                    <Input type="tel" autoComplete="tel" placeholder="+65 9123 4567" className={fillControl} {...form.register("phone")} />
+                  </Fill>
                 </div>
               </FormSection>
 
-              <FormSection eyebrow="02" title="The evening" className="mt-0 border-0 pt-0">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Event type" error={form.formState.errors.eventType?.message}>
+              <FormSection eyebrow="02" title="The evening" lede="The date, the hours, and how many people are coming." className="mt-0 border-0 pt-0">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Fill label="Event type" error={form.formState.errors.eventType?.message}>
                     <Select value={values.eventType || ""} onValueChange={(value) => form.setValue("eventType", value, { shouldValidate: true })}>
-                      <SelectTrigger className={publicControlClass}><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{EVENT_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className={fillControl}><SelectValue placeholder="Choose an occasion" /></SelectTrigger>
+                      <SelectContent>{EVENT_RATES.map((rate) => <SelectItem key={rate.id} value={rate.name}>{rate.name}</SelectItem>)}</SelectContent>
                     </Select>
-                  </Field>
-                  <Field label="Event date" error={form.formState.errors.eventDate?.message}>
-                    <Input type="date" className={publicControlClass} {...form.register("eventDate")} />
-                  </Field>
-                  <Field label="Start time" error={form.formState.errors.startTime?.message}>
-                    <Input type="time" className={publicControlClass} {...form.register("startTime")} />
-                  </Field>
-                  <Field label="End time" error={form.formState.errors.endTime?.message}>
-                    <Input type="time" className={publicControlClass} {...form.register("endTime")} />
-                  </Field>
-                  <Field label="Guest count" error={form.formState.errors.guestCount?.message}>
-                    <Input type="number" min={1} className={publicControlClass} {...form.register("guestCount", { valueAsNumber: true })} />
-                  </Field>
-                  <Field label="Budget" hint="In Philippine pesos" error={form.formState.errors.budget?.message}>
-                    <Input type="number" min={0} className={publicControlClass} {...form.register("budget", { valueAsNumber: true })} />
-                  </Field>
+                  </Fill>
+                  <Fill label="Event date" error={form.formState.errors.eventDate?.message}>
+                    <Input type="date" className={fillControl} {...form.register("eventDate")} />
+                  </Fill>
+                  <Fill label="Start time" error={form.formState.errors.startTime?.message}>
+                    <Input type="time" className={fillControl} {...form.register("startTime")} />
+                  </Fill>
+                  <Fill label="End time" error={form.formState.errors.endTime?.message}>
+                    <Input type="time" className={fillControl} {...form.register("endTime")} />
+                  </Fill>
+                  <Fill label="Guest count" error={form.formState.errors.guestCount?.message}>
+                    <div className="relative">
+                      <Input type="number" min={1} placeholder="80" className={cn(fillControl, "pr-20")} {...form.register("guestCount", { valueAsNumber: true })} />
+                      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-stone-400">guests</span>
+                    </div>
+                  </Fill>
+                  <Fill label="Budget" error={form.formState.errors.budget?.message}>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-stone-400">S$</span>
+                      <Input type="number" min={0} placeholder="100000" className={cn(fillControl, "pl-9")} {...form.register("budget", { valueAsNumber: true })} />
+                    </div>
+                  </Fill>
                 </div>
               </FormSection>
             </div>
+            <div className="p-5 md:p-8">
 
               <FormSection eyebrow="03" title="The room">
                 {form.formState.errors.venuePreference?.message ? (
@@ -249,43 +260,21 @@ export function RequestProposalForm() {
                 </div>
               </FormSection>
 
-              <FormSection eyebrow="04" title="The package">
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-                  <ChoiceCard
-                    selected={!values.packageId}
-                    title="Not sure yet"
-                    detail="We will recommend a package after we read the brief."
-                    onClick={() => form.setValue("packageId", "")}
-                  />
-                  {packages.map((item) => {
-                    const price = packagePrice(item.price, item.salePrice);
-                    const onSale = item.salePrice != null && item.salePrice > 0 && item.salePrice < item.price;
-                    return (
-                      <ChoiceCard
-                        key={item.id}
-                        selected={values.packageId === item.id}
-                        kicker={item.eventType}
-                        title={item.name}
-                        detail={`Up to ${item.guestCapacity} guests`}
-                        extra={
-                          <span>
-                            {onSale ? (
-                              <span className="mr-2 text-stone-400 line-through">
-                                <CurrencyDisplay value={item.price} />
-                              </span>
-                            ) : null}
-                            <CurrencyDisplay value={price} />
-                          </span>
-                        }
-                        onClick={() => {
-                          form.setValue("packageId", item.id);
-                          if (!form.getValues("eventType")) {
-                            form.setValue("eventType", item.eventType, { shouldValidate: true });
-                          }
-                        }}
-                      />
-                    );
-                  })}
+              <FormSection eyebrow="04" title="The occasion" lede="Starting prices. The quotation is written after we know the date and the room.">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {EVENT_RATES.map((rate) => (
+                    <ChoiceCard
+                      key={rate.id}
+                      selected={values.eventType === rate.name}
+                      title={rate.name}
+                      detail={rate.unit === "pax" ? "Priced per guest" : rate.unit === "event" ? "Priced for the event" : "We will price this after the brief"}
+                      extra={<span>{formatRate(rate)}</span>}
+                      onClick={() => {
+                        form.setValue("eventType", rate.name, { shouldValidate: true });
+                        form.setValue("packageId", "");
+                      }}
+                    />
+                  ))}
                 </div>
               </FormSection>
 
@@ -316,14 +305,14 @@ export function RequestProposalForm() {
                 </div>
               </FormSection>
 
-              <FormSection eyebrow="06" title="Notes">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,16rem)_1fr] md:items-start">
-                  <Field label="Theme">
-                    <Input className={publicControlClass} {...form.register("theme")} />
-                  </Field>
-                  <Field label="Special requests">
-                    <Textarea className="min-h-12 rounded-none border-stone-300 bg-white px-3 py-3 text-base shadow-none" {...form.register("specialRequests")} />
-                  </Field>
+              <FormSection eyebrow="06" title="Notes" lede="Anything the quotation should account for.">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,18rem)_1fr] md:items-start">
+                  <Fill label="Theme" hint="Optional">
+                    <Input placeholder="Ivory, candlelight, navy" className={fillControl} {...form.register("theme")} />
+                  </Fill>
+                  <Fill label="Special requests" hint="Optional">
+                    <Textarea placeholder="Timing, dietary notes, or anything the room should know." className="min-h-24 rounded-none border border-stone-300 bg-white px-3 py-3 text-base text-ink shadow-none placeholder:text-stone-400 focus-visible:border-ink focus-visible:ring-0" {...form.register("specialRequests")} />
+                  </Fill>
                 </div>
               </FormSection>
 
@@ -333,6 +322,7 @@ export function RequestProposalForm() {
                 </Button>
               </div>
             </div>
+          </div>
         </form>
       </Container>
     </div>
@@ -342,11 +332,13 @@ export function RequestProposalForm() {
 function FormSection({
   eyebrow,
   title,
+  lede,
   children,
   className,
 }: {
   eyebrow: string;
   title: string;
+  lede?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -356,8 +348,32 @@ function FormSection({
         <p className="text-[11px] tracking-[0.18em] text-gold uppercase">{eyebrow}</p>
         <h2 className="font-display text-2xl">{title}</h2>
       </div>
+      {lede ? <p className="mt-1 text-sm text-stone-500">{lede}</p> : null}
       <div className="mt-4">{children}</div>
     </section>
+  );
+}
+
+function Fill({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="text-[11px] tracking-[0.16em] text-stone-500 uppercase">{label}</span>
+        {hint ? <span className="text-[11px] text-stone-400">{hint}</span> : null}
+      </span>
+      <span className="mt-1.5 block">{children}</span>
+      {error ? <span className="mt-1 block text-xs text-destructive">{error}</span> : null}
+    </label>
   );
 }
 

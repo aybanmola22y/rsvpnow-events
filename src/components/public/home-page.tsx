@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
-import { CurrencyDisplay } from "@/components/shared/currency";
 import { Lightbox } from "@/components/shared/lightbox";
 import { CostEstimator } from "@/components/public/cost-estimator";
 import { ReviewCarousel } from "@/components/public/review-coverflow";
+import { EVENT_RATES, RATE_GROUPS, shortRate } from "@/lib/event-rates";
 import { photos } from "@/lib/images";
-import { packagePrice } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
@@ -34,23 +32,10 @@ const reasons = [
 ];
 
 export function HomePage() {
-  const venueList = useDemoStore((state) => state.venues);
-  const packageList = useDemoStore((state) => state.packages);
+  const settings = useDemoStore((state) => state.settings);
   const serviceList = useDemoStore((state) => state.services);
   const galleryList = useDemoStore((state) => state.gallery);
   const testimonialList = useDemoStore((state) => state.testimonials);
-  const venues = useMemo(
-    () => venueList.filter((venue) => venue.published && venue.featured).slice(0, 4),
-    [venueList],
-  );
-  const packages = useMemo(
-    () =>
-      packageList
-        .filter((item) => item.published && !item.archived)
-        .sort((a, b) => Number(b.featured) - Number(a.featured))
-        .slice(0, 6),
-    [packageList],
-  );
   const services = useMemo(() => serviceList.filter((service) => service.active).slice(0, 6), [serviceList]);
   const gallery = useMemo(() => galleryList.filter((item) => item.featured).slice(0, 6), [galleryList]);
   const testimonials = useMemo(
@@ -75,21 +60,21 @@ export function HomePage() {
           <div className="rise max-w-2xl text-white">
             <p className="text-[11px] tracking-[0.28em] text-gold uppercase">Singapore</p>
             <h1 className="mt-4 font-display text-5xl leading-[0.95] md:text-7xl">
-              Celebrate Moments. Create Experiences.
+              An event shouldn’t cost an event.
             </h1>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-white/85 md:text-lg">
-              You bring the people. We'll take care of the rest.
+              Corporate gatherings, team building, dinners, and private celebrations. You bring the people. We take care of the rest.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild className={cn(publicButtonClass, "bg-white text-ink hover:bg-stone-100")}>
-                <Link href="/venues">Explore Venues</Link>
+                <Link href="/request-proposal">Request a quotation</Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 className={cn(publicButtonClass, "border-white/70 bg-transparent text-white hover:bg-white hover:text-ink")}
               >
-                <Link href="/request-proposal">Request a Proposal</Link>
+                <Link href="/services">View services</Link>
               </Button>
             </div>
           </div>
@@ -97,84 +82,67 @@ export function HomePage() {
       </section>
 
       <section className="py-20 md:py-28">
-        <Container>
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div>
-              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Venues</p>
-              <h2 className="mt-3 font-display text-4xl md:text-5xl">Rooms worth gathering in</h2>
-            </div>
-            <Button asChild variant="outline" className={publicButtonClass}>
-              <Link href="/venues">
-                All venues <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
+        <Container className="grid items-start gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+          <div>
+            <p className="text-[11px] tracking-[0.22em] text-gold uppercase">RSVPNow</p>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl">Events, handled from the first call to the last song.</h2>
           </div>
-          <div className="mt-10 grid items-stretch gap-6 md:grid-cols-2">
-            {venues.map((venue) => (
-              <article key={venue.id} className="group flex h-full flex-col overflow-hidden bg-white">
-                <Link href={`/venues/${venue.slug}`} className="block overflow-hidden">
-                  <img
-                    src={venue.images[0]}
-                    alt={venue.name}
-                    className="aspect-[3/2] w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                </Link>
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-display text-3xl">{venue.name}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {venue.location} · {venue.minCapacity}–{venue.maxCapacity} guests
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm">
-                      From <CurrencyDisplay value={venue.startingPrice} />
-                    </p>
-                  </div>
-                  <p className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">{venue.shortDescription}</p>
-                  <Button asChild variant="outline" className={cn(publicButtonClass, "mt-5 w-fit")}>
-                    <Link href={`/venues/${venue.slug}`}>View Venue</Link>
-                  </Button>
-                </div>
-              </article>
-            ))}
+          <div>
+            <p className="text-base leading-relaxed text-stone-600">{settings.companyDescription}</p>
+            <p className="mt-4 text-sm leading-relaxed text-stone-500">
+              The work is planned properly and priced so a company dinner or a family celebration stays within reach. Prices are indicative and subject to event requirements.
+            </p>
+            <Button asChild className={cn(publicButtonClass, "mt-8")}>
+              <Link href="/request-proposal">Request a quotation</Link>
+            </Button>
           </div>
         </Container>
       </section>
 
-      <section className="bg-white py-20 md:py-28">
+      <section className="border-y border-stone-200 bg-white py-16 md:py-24">
         <Container>
-          <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Packages</p>
-          <h2 className="mt-3 max-w-xl font-display text-4xl md:text-5xl">Celebrations, already composed</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {packages.map((item) => {
-              const current = packagePrice(item.price, item.salePrice);
-              return (
-                <article key={item.id} className="flex h-full flex-col border border-stone-200">
-                  <img src={item.image} alt={item.name} className="aspect-[3/2] w-full object-cover" />
-                  <div className="flex flex-1 flex-col p-6">
-                    <h3 className="font-display text-3xl">{item.name}</h3>
-                    <p className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">{item.description}</p>
-                    <p className="mt-4 text-sm">
-                      From <CurrencyDisplay value={current} />
-                      {item.salePrice ? (
-                        <span className="ml-2 text-muted-foreground line-through">
-                          <CurrencyDisplay value={item.price} />
-                        </span>
-                      ) : null}
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <Button asChild className={publicButtonClass}>
-                        <Link href={`/packages/${item.slug}`}>View Package</Link>
-                      </Button>
-                      <Button asChild variant="outline" className={publicButtonClass}>
-                        <Link href={`/request-proposal?package=${item.slug}`}>Request Proposal</Link>
-                      </Button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+            <div>
+              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Starting prices</p>
+              <h2 className="mt-3 font-display text-4xl leading-[1.05] md:text-5xl">
+                From a figure you can read.
+              </h2>
+              <p className="mt-6 font-display text-3xl md:text-4xl">From S$35/pax</p>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-600">
+                Singapore dollars. Prices are indicative and subject to event requirements.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className={publicButtonClass}>
+                  <Link href="/request-proposal">Request a quotation</Link>
+                </Button>
+                <Button asChild variant="outline" className={publicButtonClass}>
+                  <Link href="/packages">See all prices</Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-6 border border-stone-200 bg-[#f7f6f4] p-5 md:p-7">
+              {RATE_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <p className="text-[11px] tracking-[0.22em] text-gold uppercase">{group.title}</p>
+                  <ul className="mt-3">
+                    {group.ids.map((id) => {
+                      const rate = EVENT_RATES.find((item) => item.id === id);
+                      if (!rate) return null;
+                      return (
+                        <li
+                          key={rate.id}
+                          className="flex items-baseline justify-between gap-3 border-b border-stone-200 py-2 last:border-b-0 last:pb-0"
+                        >
+                          <span className="text-sm leading-snug text-ink">{rate.shortName}</span>
+                          <span className="shrink-0 text-sm tabular-nums text-stone-600">{shortRate(rate)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         </Container>
       </section>
@@ -265,20 +233,20 @@ export function HomePage() {
         <img src={photos.garden} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-black/55" />
         <Container className="relative text-center text-white">
-          <h2 className="font-display text-5xl md:text-6xl">Planning Your Next Event?</h2>
+          <h2 className="font-display text-5xl md:text-6xl">Planning your next event?</h2>
           <p className="mx-auto mt-4 max-w-xl text-white/85">
-            Tell us the date, the room, and the feeling you want. We will answer with a proposal, not a brochure.
+            Tell us the date, the guest count, and what the evening needs. We reply with a quotation.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild className={cn(publicButtonClass, "bg-white text-ink hover:bg-stone-100")}>
-              <Link href="/request-proposal">Request Proposal</Link>
+              <Link href="/request-proposal">Request a quotation</Link>
             </Button>
             <Button
               asChild
               variant="outline"
               className={cn(publicButtonClass, "border-white/70 bg-transparent text-white hover:bg-white hover:text-ink")}
             >
-              <Link href="/packages">Explore Packages</Link>
+              <Link href="/contact">Contact</Link>
             </Button>
           </div>
         </Container>

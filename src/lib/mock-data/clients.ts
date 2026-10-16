@@ -5,7 +5,7 @@ export const seedClients: Client[] = [
   { id: "cli-isabella", name: "Isabella Reyes", company: "Reyes & Co.", email: "isabella.reyes@example.com", phone: "+63 917 555 0142", status: "Active", createdAt: "2026-01-14T02:00:00.000Z" },
   { id: "cli-gabriel", name: "Gabriel Tan", company: "Tan Holdings", email: "gabriel.tan@example.com", phone: "+63 918 555 0176", status: "Active", createdAt: "2026-02-02T02:00:00.000Z" },
   { id: "cli-sofia", name: "Sofia Delgado", company: "", email: "sofia.delgado@example.com", phone: "+63 919 555 0118", status: "Lead", createdAt: "2026-03-11T02:00:00.000Z" },
-  { id: "cli-miguel", name: "Miguel Santos", company: "Northwind Philippines", email: "miguel.santos@example.com", phone: "+63 917 555 0190", status: "Active", createdAt: "2026-03-20T02:00:00.000Z" },
+  { id: "cli-miguel", name: "Miguel Santos", company: "Northwind Singapore", email: "miguel.santos@example.com", phone: "+65 9123 0190", status: "Active", createdAt: "2026-03-20T02:00:00.000Z" },
   { id: "cli-camille", name: "Camille Uy", company: "Uy Family", email: "camille.uy@example.com", phone: "+63 916 555 0133", status: "Lead", createdAt: "2026-04-04T02:00:00.000Z" },
   { id: "cli-andre", name: "Andre Villanueva", company: "Villanueva Law", email: "andre.villanueva@example.com", phone: "+63 917 555 0164", status: "Active", createdAt: "2026-04-18T02:00:00.000Z" },
   { id: "cli-patricia", name: "Patricia Lim", company: "Lim Atelier", email: "patricia.lim@example.com", phone: "+63 918 555 0127", status: "Active", createdAt: "2026-05-02T02:00:00.000Z" },
@@ -56,7 +56,7 @@ export const seedTestimonials: Testimonial[] = [
   {
     id: "tes-2",
     name: "Gabriel Tan",
-    role: "Leadership dinner, BGC",
+    role: "Leadership dinner, Raffles Place",
     eventType: "Corporate",
     quote:
       "The briefing was short, the room was ready, and the program ended when we said it would. That is rarer than it should be.",
@@ -68,10 +68,10 @@ export const seedTestimonials: Testimonial[] = [
   {
     id: "tes-3",
     name: "Camille Uy",
-    role: "Debut planning",
-    eventType: "Debut",
+    role: "Anniversary dinner planning",
+    eventType: "Celebration",
     quote:
-      "They understood that a debut can be grand without becoming a production. The cotillion had room to breathe.",
+      "They understood that a family celebration can be grand without becoming a production. The evening had room to breathe.",
     rating: 5,
     image: photos.portraitC,
     featured: true,
@@ -92,7 +92,7 @@ export const seedTestimonials: Testimonial[] = [
   {
     id: "tes-5",
     name: "Andre Villanueva",
-    role: "Firm anniversary, Batangas",
+    role: "Firm anniversary, Sentosa",
     eventType: "Company Party",
     quote:
       "We wanted the coast without a festival atmosphere. RSVPNow kept the evening elegant and the speeches audible over the water.",
@@ -104,7 +104,7 @@ export const seedTestimonials: Testimonial[] = [
   {
     id: "tes-6",
     name: "Sofia Delgado",
-    role: "40th birthday, Tagaytay",
+    role: "40th birthday, Dempsey",
     eventType: "Birthday",
     quote:
       "The pavilion looked like a dinner party, not a themed set. My parents are still talking about the cake table.",
@@ -116,7 +116,7 @@ export const seedTestimonials: Testimonial[] = [
   {
     id: "tes-7",
     name: "Rafael Dizon",
-    role: "Product launch, Quezon City",
+    role: "Product launch, Suntec",
     eventType: "Corporate",
     quote:
       "Registration moved, the LED wall behaved, and our CEO was not left waiting on a clicker. We will book the hall again.",
