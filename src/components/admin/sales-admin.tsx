@@ -238,22 +238,22 @@ export function PaymentAdmin() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Collected</p>
+          <p className="text-[11px] font-medium text-neutral-400">Collected</p>
           <p className="mt-3 text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">{formatPeso(ledger.collected)}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Completed receipts on the ledger</p>
         </article>
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Still open</p>
+          <p className="text-[11px] font-medium text-neutral-400">Still open</p>
           <p className="mt-3 text-2xl font-bold tracking-tight text-[#c4454d] tabular-nums">{formatPeso(ledger.outstanding)}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">{ledger.openBooks.length} active bookings with a balance</p>
         </article>
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Receipts</p>
+          <p className="text-[11px] font-medium text-neutral-400">Receipts</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{payments.length}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Recorded against a booking</p>
         </article>
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Latest</p>
+          <p className="text-[11px] font-medium text-neutral-400">Latest</p>
           <p className="mt-3 text-2xl font-bold tracking-tight text-neutral-950">{ledger.latest ? formatDate(ledger.latest.date) : "—"}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">
             {ledger.latest ? `${latestClient?.name ?? "Client"} · ${formatPeso(ledger.latest.amount)}` : "No receipts yet"}
@@ -287,7 +287,7 @@ export function PaymentAdmin() {
                   <li key={payment.id} className="border-b border-neutral-100 last:border-0">
                     <Link href={booking ? `/admin/bookings/${booking.id}` : "/admin/bookings"} className="grid gap-3 px-5 py-4 hover:bg-neutral-50 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{payment.method}</p>
+                        <p className="text-[11px] font-medium text-[#1f8a4c]">{payment.method}</p>
                         <p className="mt-1 truncate text-sm font-semibold text-neutral-950">{client?.name ?? "Unknown client"}</p>
                         <p className="mt-0.5 truncate text-sm text-neutral-500">
                           {booking?.eventName ?? "Booking"} · {booking?.number ?? payment.number}
@@ -310,7 +310,7 @@ export function PaymentAdmin() {
 
         <div className="grid min-w-0 gap-4">
           <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">How it arrived</h2>
+            <h2 className="text-[11px] font-semibold text-neutral-500">How it arrived</h2>
             <ul className="mt-4 space-y-3">
               {ledger.methods.map((item) => (
                 <li key={item.method}>
@@ -331,7 +331,7 @@ export function PaymentAdmin() {
 
           <section className="rounded-lg border border-black/5 bg-white shadow-sm">
             <header className="px-5 pt-5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Still to collect</h2>
+              <h2 className="text-[11px] font-semibold text-neutral-500">Still to collect</h2>
               <p className="mt-1 text-xs text-neutral-400">Active bookings with money left on the total.</p>
             </header>
             <ul className="mt-2">
@@ -343,7 +343,7 @@ export function PaymentAdmin() {
                   return (
                     <li key={booking.id} className="border-b border-neutral-100 last:border-0">
                       <Link href={`/admin/bookings/${booking.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
-                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{booking.eventType}</p>
+                        <p className="text-[11px] font-medium text-[#1f8a4c]">{booking.eventType}</p>
                         <div className="mt-1 flex items-baseline justify-between gap-3">
                           <p className="truncate text-sm font-medium text-neutral-950">{booking.eventName}</p>
                           <p className="shrink-0 text-sm font-semibold text-neutral-950 tabular-nums">{formatPeso(balance)}</p>
@@ -411,22 +411,22 @@ export function ClientAdminList() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link href="/admin/clients?status=Active" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Active</p>
+          <p className="text-[11px] font-medium text-neutral-400">Active</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-[#1f8a4c]">{active}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Already on the house account</p>
         </Link>
         <Link href="/admin/clients?status=Lead" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Leads</p>
+          <p className="text-[11px] font-medium text-neutral-400">Leads</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{leads}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Still marked as a lead</p>
         </Link>
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Booked</p>
+          <p className="text-[11px] font-medium text-neutral-400">Booked</p>
           <p className="mt-3 text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">{formatPeso(bookedValue)}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">{withEvents} clients with a date</p>
         </article>
         <Link href="/admin/clients?status=Inactive" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Inactive</p>
+          <p className="text-[11px] font-medium text-neutral-400">Inactive</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{clients.filter((client) => client.status === "Inactive").length}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">No current work</p>
         </Link>
@@ -500,7 +500,7 @@ export function ClientAdminList() {
         <div className="grid min-w-0 gap-4">
           <section className="rounded-lg border border-black/5 bg-white shadow-sm">
             <header className="px-5 pt-5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Largest accounts</h2>
+              <h2 className="text-[11px] font-semibold text-neutral-500">Largest accounts</h2>
               <p className="mt-1 text-xs text-neutral-400">By booked value, cancelled dates left out.</p>
             </header>
             <ul className="mt-2">
@@ -516,7 +516,7 @@ export function ClientAdminList() {
           </section>
           <section className="rounded-lg border border-black/5 bg-white shadow-sm">
             <header className="px-5 pt-5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Newest leads</h2>
+              <h2 className="text-[11px] font-semibold text-neutral-500">Newest leads</h2>
             </header>
             <ul className="mt-2">
               {newestLeads.slice(0, 5).map((client) => (

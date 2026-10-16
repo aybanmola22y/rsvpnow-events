@@ -24,7 +24,7 @@ import { PageHeader } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { INQUIRY_STATUSES, type InquiryStatus } from "@/lib/types";
-import { formatDate, formatPeso, formatTime, wait } from "@/lib/format";
+import { formatDate, formatLabel, formatPeso, formatTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
@@ -104,22 +104,22 @@ export function InquiryAdminList() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link href="/admin/inquiries?status=NEW" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">New</p>
+          <p className="text-[11px] font-medium text-neutral-400">New</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.fresh}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Waiting on a first reply</p>
         </Link>
         <Link href="/admin/inquiries?status=FOR REVIEW" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">For review</p>
+          <p className="text-[11px] font-medium text-neutral-400">For review</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.review}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Needs a look before the quote</p>
         </Link>
         <Link href="/admin/inquiries?status=PROPOSAL SENT" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Proposal sent</p>
+          <p className="text-[11px] font-medium text-neutral-400">Proposal sent</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.sent}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Waiting on a yes</p>
         </Link>
         <Link href="/admin/inquiries?status=ACCEPTED" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Accepted</p>
+          <p className="text-[11px] font-medium text-neutral-400">Accepted</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-[#1f8a4c]">{summary.accepted}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Ready to become a booking</p>
         </Link>
@@ -174,7 +174,7 @@ export function InquiryAdminList() {
                   <li key={inquiry.id} className="border-b border-neutral-100 last:border-0">
                     <Link href={`/admin/inquiries/${inquiry.id}`} className="grid gap-3 px-5 py-4 hover:bg-neutral-50 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{inquiry.eventType}</p>
+                        <p className="text-[11px] font-medium text-[#1f8a4c]">{inquiry.eventType}</p>
                         <p className="mt-1 truncate text-sm font-semibold text-neutral-950">{inquiry.fullName}</p>
                         <p className="mt-0.5 truncate text-sm text-neutral-500">
                           {formatDate(inquiry.eventDate)} · {inquiry.guestCount} guests · {venue?.name || inquiry.venueName || "Venue not chosen"}
@@ -197,13 +197,13 @@ export function InquiryAdminList() {
 
         <div className="grid min-w-0 gap-4">
           <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">By status</h2>
+            <h2 className="text-[11px] font-semibold text-neutral-500">By status</h2>
             <ul className="mt-4 space-y-3">
               {summary.byStatus.map((item) => (
                 <li key={item.status}>
                   <Link href={`/admin/inquiries?status=${encodeURIComponent(item.status)}`} className="block">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-medium text-neutral-950">{item.status}</span>
+                      <span className="font-medium normal-case text-neutral-950">{formatLabel(item.status)}</span>
                       <span className="text-neutral-500 tabular-nums">{item.count}</span>
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100">
@@ -217,7 +217,7 @@ export function InquiryAdminList() {
 
           <section className="rounded-lg border border-black/5 bg-white shadow-sm">
             <header className="px-5 pt-5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Coming up</h2>
+              <h2 className="text-[11px] font-semibold text-neutral-500">Coming up</h2>
               <p className="mt-1 text-xs text-neutral-400">Open requests whose date is still ahead.</p>
             </header>
             <ul className="mt-2">
@@ -227,7 +227,7 @@ export function InquiryAdminList() {
                 summary.upcoming.slice(0, 6).map((inquiry) => (
                   <li key={inquiry.id} className="border-b border-neutral-100 last:border-0">
                     <Link href={`/admin/inquiries/${inquiry.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
-                      <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{inquiry.eventType}</p>
+                      <p className="text-[11px] font-medium text-[#1f8a4c]">{inquiry.eventType}</p>
                       <p className="mt-1 text-sm font-medium text-neutral-950">{inquiry.fullName}</p>
                       <p className="mt-1 text-xs text-neutral-400">{formatDate(inquiry.eventDate)} · {inquiry.guestCount} guests</p>
                     </Link>
@@ -310,7 +310,7 @@ export function InquiryAdminDetail({ id }: { id: string }) {
           <DialogHeader><DialogTitle>Edit status</DialogTitle></DialogHeader>
           <Select value={status} onValueChange={(value) => setStatus(value as InquiryStatus)}>
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{INQUIRY_STATUSES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+            <SelectContent>{INQUIRY_STATUSES.map((item) => <SelectItem key={item} value={item}>{formatLabel(item)}</SelectItem>)}</SelectContent>
           </Select>
           <DialogFooter>
             <Button onClick={() => { setInquiryStatus(inquiry.id, status); toast.success("Inquiry status updated."); setStatusOpen(false); }}>Save status</Button>

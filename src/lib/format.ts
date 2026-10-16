@@ -79,3 +79,30 @@ export function wait(ms = 650) {
 export function packagePrice(price: number, salePrice: number | null) {
   return salePrice != null && salePrice > 0 ? salePrice : price;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  NEW: "New",
+  CONTACTED: "Contacted",
+  "FOR REVIEW": "For review",
+  "PROPOSAL PREPARATION": "Proposal preparation",
+  "PROPOSAL SENT": "Proposal sent",
+  ACCEPTED: "Accepted",
+  DECLINED: "Declined",
+  ARCHIVED: "Archived",
+  DRAFT: "Draft",
+  "FOR APPROVAL": "For approval",
+  APPROVED: "Approved",
+  SENT: "Sent",
+  REVISED: "Revised",
+};
+
+/** Human labels for ALL CAPS status enums (e.g. "FOR REVIEW" → "For review"). */
+export function formatLabel(value: string) {
+  if (!value) return value;
+  if (STATUS_LABELS[value]) return STATUS_LABELS[value];
+  return value
+    .toLowerCase()
+    .split(/([\s/-]+)/)
+    .map((part, index) => (index % 2 === 0 && part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join("");
+}

@@ -27,7 +27,7 @@ import { CurrencyDisplay } from "@/components/shared/currency";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { RecordPaymentDialog } from "@/components/admin/payment-dialog";
 import { BOOKING_STATUSES, type Booking, type BookingStatus } from "@/lib/types";
-import { formatDate, formatDateTime, formatPeso, formatTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatLabel, formatPeso, formatTime } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
@@ -104,22 +104,22 @@ export function BookingAdminList() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link href="/admin/bookings?status=Confirmed" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Confirmed</p>
+          <p className="text-[11px] font-medium text-neutral-400">Confirmed</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-[#1f8a4c]">{summary.confirmed}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Dates held on the book</p>
         </Link>
         <Link href="/admin/bookings?status=Tentative" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Tentative</p>
+          <p className="text-[11px] font-medium text-neutral-400">Tentative</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.tentative}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Held, not yet firm</p>
         </Link>
         <Link href="/admin/bookings?when=upcoming" className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Ahead</p>
+          <p className="text-[11px] font-medium text-neutral-400">Ahead</p>
           <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{summary.ahead}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Still on the calendar</p>
         </Link>
         <article className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Confirmed value</p>
+          <p className="text-[11px] font-medium text-neutral-400">Confirmed value</p>
           <p className="mt-3 text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">{formatPeso(summary.held)}</p>
           <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Totals on confirmed bookings</p>
         </article>
@@ -168,7 +168,7 @@ export function BookingAdminList() {
                   <li key={booking.id} className="border-b border-neutral-100 last:border-0">
                     <Link href={`/admin/bookings/${booking.id}`} className="grid gap-3 px-5 py-4 hover:bg-neutral-50 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{booking.eventType}</p>
+                        <p className="text-[11px] font-medium text-[#1f8a4c]">{booking.eventType}</p>
                         <p className="mt-1 truncate text-sm font-semibold text-neutral-950">{booking.eventName}</p>
                         <p className="mt-0.5 truncate text-sm text-neutral-500">
                           {formatDate(booking.eventDate)} · {booking.guestCount} guests · {booking.venueName}
@@ -194,13 +194,13 @@ export function BookingAdminList() {
 
         <div className="grid min-w-0 gap-4">
           <section className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">By status</h2>
+            <h2 className="text-[11px] font-semibold text-neutral-500">By status</h2>
             <ul className="mt-4 space-y-3">
               {summary.byStatus.map((item) => (
                 <li key={item.status}>
                   <Link href={`/admin/bookings?status=${encodeURIComponent(item.status)}`} className="block">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-medium text-neutral-950">{item.status}</span>
+                      <span className="font-medium normal-case text-neutral-950">{formatLabel(item.status)}</span>
                       <span className="text-neutral-500 tabular-nums">{item.count}</span>
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100">
@@ -213,7 +213,7 @@ export function BookingAdminList() {
           </section>
           <section className="rounded-lg border border-black/5 bg-white shadow-sm">
             <header className="px-5 pt-5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Coming up</h2>
+              <h2 className="text-[11px] font-semibold text-neutral-500">Coming up</h2>
               <p className="mt-1 text-xs text-neutral-400">Dates still ahead, not cancelled.</p>
             </header>
             <ul className="mt-2">
@@ -223,7 +223,7 @@ export function BookingAdminList() {
                 summary.upcoming.slice(0, 6).map((booking) => (
                   <li key={booking.id} className="border-b border-neutral-100 last:border-0">
                     <Link href={`/admin/bookings/${booking.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
-                      <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{booking.eventType}</p>
+                      <p className="text-[11px] font-medium text-[#1f8a4c]">{booking.eventType}</p>
                       <p className="mt-1 text-sm font-medium text-neutral-950">{booking.eventName}</p>
                       <p className="mt-1 text-xs text-neutral-400">{formatDate(booking.eventDate)} · {booking.venueName}</p>
                     </Link>

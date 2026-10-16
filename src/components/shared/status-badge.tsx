@@ -1,3 +1,4 @@
+import { formatLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const tones: Record<string, string> = {
@@ -38,12 +39,12 @@ export function StatusBadge({ status, className }: { status: string; className?:
   return (
     <span
       className={cn(
-        "inline-flex items-center border px-2 py-1 text-[10px] font-medium tracking-[0.14em] uppercase",
+        "inline-flex items-center border px-2 py-0.5 text-[11px] font-medium normal-case",
         tones[status] ?? "border-stone-200 bg-white text-ink",
         className,
       )}
     >
-      {status}
+      {formatLabel(status)}
     </span>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { eachDayOfInterval, format, subDays } from "date-fns";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatLabel } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 
 const tooltipStyle = {
@@ -53,7 +53,7 @@ export function DashboardHome() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
           <Link key={card.label} href={card.href} className="rounded-lg border border-black/5 bg-white p-5 shadow-sm transition hover:border-black/10">
-            <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">{card.label}</p>
+            <p className="text-[11px] font-medium text-neutral-400">{card.label}</p>
             <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">{card.value}</p>
             <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">{card.hint}</p>
           </Link>
@@ -62,7 +62,7 @@ export function DashboardHome() {
 
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[1.5fr_0.9fr]">
         <section className="min-w-0 rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-          <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Inquiry activity</h2>
+          <h2 className="text-[11px] font-semibold text-neutral-500">Inquiry activity</h2>
           <p className="mt-1 text-xs text-neutral-400">Requests received over the last 30 days.</p>
           <div className="mt-4 h-72 min-w-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -79,8 +79,8 @@ export function DashboardHome() {
 
         <section className="min-w-0 rounded-lg border border-black/5 bg-white shadow-sm">
           <header className="flex items-center justify-between px-5 pt-5">
-            <h2 className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase">Latest inquiries</h2>
-            <Link href="/admin/inquiries" className="text-[11px] font-semibold tracking-wide text-[#c4454d] uppercase">
+            <h2 className="text-[11px] font-semibold text-neutral-500">Latest inquiries</h2>
+            <Link href="/admin/inquiries" className="text-[11px] font-semibold text-[#c4454d]">
               View all
             </Link>
           </header>
@@ -88,9 +88,9 @@ export function DashboardHome() {
             {latest.map((inquiry) => (
               <li key={inquiry.id} className="border-b border-neutral-100 last:border-0">
                 <Link href={`/admin/inquiries/${inquiry.id}`} className="block px-5 py-3.5 hover:bg-neutral-50">
-                  <p className="text-[11px] font-medium tracking-wide text-[#1f8a4c] uppercase">{inquiry.eventType}</p>
+                  <p className="text-[11px] font-medium text-[#1f8a4c]">{inquiry.eventType}</p>
                   <p className="mt-1 text-sm font-medium text-neutral-950">{inquiry.fullName}</p>
-                  <p className="mt-1 text-xs text-neutral-400">{formatDateTime(inquiry.createdAt)} · {inquiry.status}</p>
+                  <p className="mt-1 text-xs text-neutral-400">{formatDateTime(inquiry.createdAt)} · {formatLabel(inquiry.status)}</p>
                 </Link>
               </li>
             ))}
