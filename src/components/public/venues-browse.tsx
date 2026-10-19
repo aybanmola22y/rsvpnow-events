@@ -76,7 +76,7 @@ export function VenuesPage() {
         <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Venues</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl">Find the room</h1>
         <p className="mt-4 max-w-2xl text-stone-600">
-          Filter by the number of guests, the city, and the kind of evening you are planning.
+          Filter by the number of guests, the city, and the kind of event you are planning.
         </p>
         <div className="mt-8 grid gap-3 rounded-none border border-stone-200 bg-white p-4 md:grid-cols-3 lg:grid-cols-6">
           <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search venue" className={publicControlClass} />
@@ -237,7 +237,7 @@ export function VenueDetail({ slug }: { slug: string }) {
               <h2 className="mt-3 font-display text-4xl">What the event can start from</h2>
             </div>
             <Button asChild variant="outline" className={publicButtonClass}>
-              <Link href="/packages">See all prices</Link>
+              <Link href="/request-proposal">Request a quotation</Link>
             </Button>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">

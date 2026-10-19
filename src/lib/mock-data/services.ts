@@ -139,7 +139,7 @@ export const seedServices: Service[] = [
     name: "Signature Bar Program",
     slug: "signature-bar-program",
     description:
-      "A hosted bar menu built around the evening: a welcome drink, a signature cocktail, and service that closes when the program does.",
+      "A hosted bar menu built around the event: a welcome drink, a signature cocktail, and service that closes when the program does.",
     image: photos.cocktail,
     price: 20000,
     pricingType: "Custom",

@@ -19,14 +19,15 @@ import Link from "next/link";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { ProposalSuccess } from "@/components/public/contact-page";
-import { EVENT_RATES, formatRate } from "@/lib/event-rates";
-import { formatDate, formatTime, wait } from "@/lib/format";
+import { EVENT_RATES } from "@/lib/event-rates";
+import { formatDate, formatPeso, formatTime, wait } from "@/lib/format";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
   fullName: z.string().min(2, "Enter your full name"),
-  company: z.string(),
+  company: z.string().min(1, "Enter a company name"),
+  companyAddress: z.string().min(1, "Enter a company address"),
   email: z.email("Enter a valid email address"),
   phone: z.string().min(7, "Enter a phone number"),
   eventType: z.string().min(1, "Choose an event type"),
@@ -40,6 +41,7 @@ const schema = z.object({
   budget: z.number().min(0, "Enter a budget"),
   theme: z.string(),
   specialRequests: z.string(),
+  otherRequirements: z.string(),
 }).refine((values) => values.endTime > values.startTime, {
   path: ["endTime"],
   message: "End time must be after the start time",
@@ -75,6 +77,7 @@ export function RequestProposalForm() {
     defaultValues: {
       fullName: "",
       company: "",
+      companyAddress: "",
       email: "",
       phone: "",
       eventType: "",
@@ -88,6 +91,7 @@ export function RequestProposalForm() {
       budget: 100000,
       theme: "",
       specialRequests: "",
+      otherRequirements: "",
     },
   });
   const serviceIds = useWatch({ control: form.control, name: "serviceIds" });
@@ -119,10 +123,34 @@ export function RequestProposalForm() {
     setPending(true);
     await wait();
     const venue = venues.find((item) => item.id === values.venuePreference);
+    const notes = [
+      `Company address: ${values.companyAddress}`,
+      values.otherRequirements.trim() ? `Other requirements: ${values.otherRequirements.trim()}` : "",
+      values.specialRequests.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
     const inquiry = submitInquiry({
-      ...values,
-      venueName: venue?.name ?? "",
-      venueAddress: "",
+      fullName: values.fullName,
+      company: values.company,
+      email: values.email,
+      phone: values.phone,
+      eventType: values.eventType,
+      eventDate: values.eventDate,
+      startTime: values.startTime,
+      endTime: values.endTime,
+      guestCount: values.guestCount,
+      venuePreference: values.venuePreference,
+      venueName:
+        values.venuePreference === "suggest"
+          ? "RSVPNow Suggest a Venue"
+          : venue?.name ?? "",
+      venueAddress: values.companyAddress,
+      packageId: values.packageId,
+      serviceIds: values.serviceIds,
+      budget: values.budget,
+      theme: values.theme,
+      specialRequests: notes,
       source: "website",
     });
     setPending(false);
@@ -132,17 +160,31 @@ export function RequestProposalForm() {
   const values = useWatch({ control: form.control });
   const selectedServices = services.filter((service) => (values.serviceIds ?? serviceIds).includes(service.id));
   const venueChoice = venues.find((item) => item.id === values.venuePreference);
-  const packageChoice = packages.find((item) => item.id === values.packageId);
-  const selectedRate = EVENT_RATES.find((rate) => rate.name === values.eventType);
   const venueLabel =
     values.venuePreference === "client"
       ? "Your own venue"
-      : values.venuePreference === "undecided" || !values.venuePreference
-        ? "No preference yet"
-        : venueChoice?.name ?? "No preference yet";
+      : values.venuePreference === "suggest"
+        ? "RSVPNow Suggest a Venue"
+        : values.venuePreference === "undecided" || !values.venuePreference
+          ? "No preference yet"
+          : venueChoice?.name ?? "No preference yet";
   const whenLabel = values.eventDate
     ? `${formatDate(values.eventDate)}${values.startTime && values.endTime ? ` · ${formatTime(values.startTime)}–${formatTime(values.endTime)}` : ""}`
-    : "Date not set";
+    : "";
+  const forLabel = values.fullName?.trim() || "";
+  const occasionLabel = values.eventType
+    ? `${values.eventType}${values.guestCount ? ` · ${values.guestCount} guests` : ""}`
+    : "";
+  const requirementsCount = selectedServices.length + (values.otherRequirements?.trim() ? 1 : 0);
+  const summaryFacts = [
+    { label: "For", value: forLabel, empty: "Name" },
+    { label: "Occasion", value: occasionLabel, empty: "Type" },
+    { label: "When", value: whenLabel, empty: "Date" },
+    { label: "Venue", value: venueLabel === "No preference yet" ? "" : venueLabel, empty: "Venue" },
+    { label: "Budget", value: Number(values.budget) > 0 ? formatPeso(Number(values.budget)) : "", empty: "Budget" },
+    { label: "Needs", value: requirementsCount ? `${requirementsCount} selected` : "", empty: "None yet" },
+  ];
+  const filledCount = summaryFacts.filter((item) => item.value).length;
 
   if (reference) return <ProposalSuccess number={reference} />;
 
@@ -151,41 +193,44 @@ export function RequestProposalForm() {
       <Container>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Proposal</p>
+            <p className="text-[11px] tracking-[0.22em] text-stone-500 uppercase">Proposal</p>
             <h1 className="mt-2 font-display text-4xl md:text-5xl">Request a proposal</h1>
           </div>
           <p className="max-w-sm text-sm text-stone-600">
-            Tell us the shape of the evening. We reply with an itemized quotation.{" "}
+            Tell us the shape of the event. We reply with an itemized quotation.{" "}
             <Link href="/build-event" className="text-ink underline underline-offset-4">Build it step by step</Link>
           </p>
         </div>
 
         <form className="mt-5" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border border-stone-200 bg-white px-5 py-4">
-            <div>
-              <p className="text-[11px] tracking-[0.22em] text-gold uppercase">This request</p>
-              <p className="mt-1 font-display text-3xl leading-none">
+          <div className="sticky top-20 z-30 mb-5 border border-stone-200 bg-white/95 shadow-sm backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4 border-b border-stone-100 px-5 py-3">
+              <div className="flex items-baseline gap-3">
+                <p className="text-[11px] tracking-[0.18em] text-stone-500 uppercase">This request</p>
+                <p className="text-xs text-stone-400">{filledCount} of {summaryFacts.length} filled</p>
+              </div>
+              <p className="font-display text-2xl leading-none tabular-nums md:text-3xl">
                 <CurrencyDisplay value={Number(values.budget) || 0} />
               </p>
             </div>
-            <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <SideFact label="For" value={values.fullName?.trim() || "Not named yet"} />
-              <SideFact label="Occasion" value={values.eventType ? `${values.eventType} · ${values.guestCount || "—"} guests` : "Not chosen"} />
-              <SideFact label="When" value={whenLabel} />
-              <SideFact label="Venue" value={venueLabel} />
-              <SideFact label="Starting" value={selectedRate ? formatRate(selectedRate) : packageChoice?.name ?? "Not chosen"} />
-              <SideFact label="Added" value={selectedServices.length ? `${selectedServices.length} services` : "None"} />
+            <dl className="grid grid-cols-2 gap-px bg-stone-100 sm:grid-cols-3 lg:grid-cols-6">
+              {summaryFacts.map((item) => (
+                <SideFact key={item.label} label={item.label} value={item.value} empty={item.empty} />
+              ))}
             </dl>
           </div>
           <div className="border border-stone-200 bg-white">
-            <div className="grid gap-10 bg-[#f7f6f4] p-5 md:p-8 xl:grid-cols-2 xl:gap-16">
+            <div className="grid gap-10 bg-[#f5f5f5] p-5 md:p-8 xl:grid-cols-2 xl:gap-16">
               <FormSection eyebrow="01" title="Who we write to" lede="The quotation is addressed to this person." className="mt-0 border-0 pt-0">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Fill label="Full name" error={form.formState.errors.fullName?.message}>
                     <Input autoComplete="name" placeholder="Alex Tan" className={fillControl} {...form.register("fullName")} />
                   </Fill>
-                  <Fill label="Company" hint="Optional">
-                    <Input autoComplete="organization" placeholder="Company or family" className={fillControl} {...form.register("company")} />
+                  <Fill label="Company" error={form.formState.errors.company?.message}>
+                    <Input autoComplete="organization" placeholder="Company name" className={fillControl} {...form.register("company")} />
+                  </Fill>
+                  <Fill label="Company address" error={form.formState.errors.companyAddress?.message} className="sm:col-span-2">
+                    <Input autoComplete="street-address" placeholder="60 Paya Lebar Rd, Singapore 409051" className={fillControl} {...form.register("companyAddress")} />
                   </Fill>
                   <Fill label="Email" error={form.formState.errors.email?.message}>
                     <Input type="email" autoComplete="email" placeholder="name@company.com" className={fillControl} {...form.register("email")} />
@@ -196,22 +241,10 @@ export function RequestProposalForm() {
                 </div>
               </FormSection>
 
-              <FormSection eyebrow="02" title="The evening" lede="The date, the hours, and how many people are coming." className="mt-0 border-0 pt-0">
+              <FormSection eyebrow="02" title="Event details" lede="The date, the hours, and how many people are coming." className="mt-0 border-0 pt-0">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Fill label="Event type" error={form.formState.errors.eventType?.message}>
-                    <Select value={values.eventType || ""} onValueChange={(value) => form.setValue("eventType", value, { shouldValidate: true })}>
-                      <SelectTrigger className={fillControl}><SelectValue placeholder="Choose an occasion" /></SelectTrigger>
-                      <SelectContent>{EVENT_RATES.map((rate) => <SelectItem key={rate.id} value={rate.name}>{rate.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </Fill>
                   <Fill label="Event date" error={form.formState.errors.eventDate?.message}>
                     <Input type="date" className={fillControl} {...form.register("eventDate")} />
-                  </Fill>
-                  <Fill label="Start time" error={form.formState.errors.startTime?.message}>
-                    <Input type="time" className={fillControl} {...form.register("startTime")} />
-                  </Fill>
-                  <Fill label="End time" error={form.formState.errors.endTime?.message}>
-                    <Input type="time" className={fillControl} {...form.register("endTime")} />
                   </Fill>
                   <Fill label="Guest count" error={form.formState.errors.guestCount?.message}>
                     <div className="relative">
@@ -219,7 +252,13 @@ export function RequestProposalForm() {
                       <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-stone-400">guests</span>
                     </div>
                   </Fill>
-                  <Fill label="Budget" error={form.formState.errors.budget?.message}>
+                  <Fill label="Start time" error={form.formState.errors.startTime?.message}>
+                    <Input type="time" className={fillControl} {...form.register("startTime")} />
+                  </Fill>
+                  <Fill label="End time" error={form.formState.errors.endTime?.message}>
+                    <Input type="time" className={fillControl} {...form.register("endTime")} />
+                  </Fill>
+                  <Fill label="Budget" error={form.formState.errors.budget?.message} className="sm:col-span-2">
                     <div className="relative">
                       <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-stone-400">S$</span>
                       <Input type="number" min={0} placeholder="100000" className={cn(fillControl, "pl-9")} {...form.register("budget", { valueAsNumber: true })} />
@@ -234,7 +273,7 @@ export function RequestProposalForm() {
                 {form.formState.errors.venuePreference?.message ? (
                   <p className="mb-3 text-xs text-destructive">{form.formState.errors.venuePreference.message}</p>
                 ) : null}
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <ChoiceCard
                     selected={values.venuePreference === "undecided"}
                     title="No preference yet"
@@ -247,39 +286,38 @@ export function RequestProposalForm() {
                     detail="The event already has an address. Tell us more in the notes."
                     onClick={() => form.setValue("venuePreference", "client", { shouldValidate: true })}
                   />
-                  {venues.map((venue) => (
-                    <ChoiceCard
-                      key={venue.id}
-                      selected={values.venuePreference === venue.id}
-                      title={venue.name}
-                      detail={`${venue.location} · ${venue.minCapacity}–${venue.maxCapacity} guests`}
-                      extra={<span>From <CurrencyDisplay value={venue.startingPrice} /></span>}
-                      onClick={() => form.setValue("venuePreference", venue.id, { shouldValidate: true })}
-                    />
-                  ))}
+                  <ChoiceCard
+                    selected={values.venuePreference === "suggest"}
+                    title="RSVPNow Suggest a Venue"
+                    detail="Tell us the brief and we will recommend a suitable room."
+                    onClick={() => form.setValue("venuePreference", "suggest", { shouldValidate: true })}
+                  />
                 </div>
               </FormSection>
 
-              <FormSection eyebrow="04" title="The occasion" lede="Starting prices. The quotation is written after we know the date and the room.">
+              <FormSection eyebrow="04" title="The occasion" lede="Tell us the type of event and anything that shapes the brief.">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Fill label="Type of event" error={form.formState.errors.eventType?.message} className="sm:col-span-2">
+                    <Select value={values.eventType || ""} onValueChange={(value) => {
+                      form.setValue("eventType", value, { shouldValidate: true });
+                      form.setValue("packageId", "");
+                    }}>
+                      <SelectTrigger className={fillControl}><SelectValue placeholder="Choose or describe the event type" /></SelectTrigger>
+                      <SelectContent>
+                        {EVENT_RATES.map((rate) => (
+                          <SelectItem key={rate.id} value={rate.name}>{rate.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Fill>
+                  <Fill label="Theme / style" hint="Optional" className="sm:col-span-2">
+                    <Input placeholder="e.g. Formal dinner, outdoor team day, product launch" className={fillControl} {...form.register("theme")} />
+                  </Fill>
+                </div>
+              </FormSection>
+
+              <FormSection eyebrow="05" title="Event requirements" lede="Select what you need. Add anything else below.">
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {EVENT_RATES.map((rate) => (
-                    <ChoiceCard
-                      key={rate.id}
-                      selected={values.eventType === rate.name}
-                      title={rate.name}
-                      detail={rate.unit === "pax" ? "Priced per guest" : rate.unit === "event" ? "Priced for the event" : "We will price this after the brief"}
-                      extra={<span>{formatRate(rate)}</span>}
-                      onClick={() => {
-                        form.setValue("eventType", rate.name, { shouldValidate: true });
-                        form.setValue("packageId", "");
-                      }}
-                    />
-                  ))}
-                </div>
-              </FormSection>
-
-              <FormSection eyebrow="05" title="What you add">
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {serviceGroups.flatMap((group) =>
                     group.items.map((service) => {
                       const selected = (values.serviceIds ?? []).includes(service.id);
@@ -289,8 +327,6 @@ export function RequestProposalForm() {
                           selected={selected}
                           kicker={group.category}
                           title={service.name}
-                          detail={`${service.pricingType}`}
-                          extra={<CurrencyDisplay value={service.price} />}
                           onClick={() => {
                             const current = form.getValues("serviceIds");
                             form.setValue(
@@ -303,17 +339,21 @@ export function RequestProposalForm() {
                     }),
                   )}
                 </div>
-              </FormSection>
-
-              <FormSection eyebrow="06" title="Notes" lede="Anything the quotation should account for.">
-                <div className="grid gap-4 md:grid-cols-[minmax(0,18rem)_1fr] md:items-start">
-                  <Fill label="Theme" hint="Optional">
-                    <Input placeholder="Ivory, candlelight, navy" className={fillControl} {...form.register("theme")} />
-                  </Fill>
-                  <Fill label="Special requests" hint="Optional">
-                    <Textarea placeholder="Timing, dietary notes, or anything the room should know." className="min-h-24 rounded-none border border-stone-300 bg-white px-3 py-3 text-base text-ink shadow-none placeholder:text-stone-400 focus-visible:border-ink focus-visible:ring-0" {...form.register("specialRequests")} />
+                <div className="mt-4">
+                  <Fill label="Others" hint="Optional">
+                    <Textarea
+                      placeholder="Anything else the event needs that is not listed above."
+                      className="min-h-24 rounded-none border border-stone-300 bg-white px-3 py-3 text-base text-ink shadow-none placeholder:text-stone-400 focus-visible:border-ink focus-visible:ring-0"
+                      {...form.register("otherRequirements")}
+                    />
                   </Fill>
                 </div>
+              </FormSection>
+
+              <FormSection eyebrow="06" title="Notes" lede="Anything else the quotation should account for.">
+                <Fill label="Special requests" hint="Optional">
+                  <Textarea placeholder="Timing, dietary notes, or anything the room should know." className="min-h-24 rounded-none border border-stone-300 bg-white px-3 py-3 text-base text-ink shadow-none placeholder:text-stone-400 focus-visible:border-ink focus-visible:ring-0" {...form.register("specialRequests")} />
+                </Fill>
               </FormSection>
 
               <div className="flex justify-end border-t border-stone-200 pt-5">
@@ -358,15 +398,17 @@ function Fill({
   label,
   hint,
   error,
+  className,
   children,
 }: {
   label: string;
   hint?: string;
   error?: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block", className)}>
       <span className="flex items-baseline justify-between gap-3">
         <span className="text-[11px] tracking-[0.16em] text-stone-500 uppercase">{label}</span>
         {hint ? <span className="text-[11px] text-stone-400">{hint}</span> : null}
@@ -388,7 +430,7 @@ function ChoiceCard({
   selected: boolean;
   kicker?: string;
   title: string;
-  detail: string;
+  detail?: string;
   extra?: ReactNode;
   onClick: () => void;
 }) {
@@ -408,17 +450,20 @@ function ChoiceCard({
         </span>
         {selected ? <span className="shrink-0 text-[10px] tracking-[0.16em] text-gold uppercase">Selected</span> : null}
       </span>
-      <span className="mt-1 line-clamp-1 text-xs text-stone-500">{detail}</span>
+      {detail ? <span className="mt-1 line-clamp-1 text-xs text-stone-500">{detail}</span> : null}
       {extra ? <span className="mt-auto pt-2 text-sm">{extra}</span> : null}
     </button>
   );
 }
 
-function SideFact({ label, value }: { label: string; value: string }) {
+function SideFact({ label, value, empty }: { label: string; value: string; empty: string }) {
+  const filled = Boolean(value);
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="bg-white px-4 py-3">
       <dt className="text-[10px] tracking-[0.14em] text-stone-400 uppercase">{label}</dt>
-      <dd>{value}</dd>
+      <dd className={cn("mt-1 truncate text-sm", filled ? "font-medium text-ink" : "text-stone-400")}>
+        {filled ? value : empty}
+      </dd>
     </div>
   );
 }

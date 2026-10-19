@@ -71,7 +71,7 @@ export const seedTestimonials: Testimonial[] = [
     role: "Anniversary dinner planning",
     eventType: "Celebration",
     quote:
-      "They understood that a family celebration can be grand without becoming a production. The evening had room to breathe.",
+      "They understood that a family celebration can be grand without becoming a production. The event had room to breathe.",
     rating: 5,
     image: photos.portraitC,
     featured: true,
@@ -95,7 +95,7 @@ export const seedTestimonials: Testimonial[] = [
     role: "Firm anniversary, Sentosa",
     eventType: "Company Party",
     quote:
-      "We wanted the coast without a festival atmosphere. RSVPNow kept the evening elegant and the speeches audible over the water.",
+      "We wanted the coast without a festival atmosphere. RSVPNow kept the event elegant and the speeches audible over the water.",
     rating: 4,
     image: photos.portraitD,
     featured: false,

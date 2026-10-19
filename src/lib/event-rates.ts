@@ -10,28 +10,17 @@ export type EventRate = {
 };
 
 export const EVENT_RATES: EventRate[] = [
-  { id: "team-building", name: "Corporate Team Building", shortName: "Team building", slug: "corporate-team-building", unit: "pax", amount: 35 },
-  { id: "dinner-dance", name: "Corporate Dinner & Dance", shortName: "Dinner & dance", slug: "corporate-dinner-and-dance", unit: "pax", amount: 80 },
-  { id: "retreat-local", name: "Corporate Retreats (Local)", shortName: "Local retreats", slug: "corporate-retreats-local", unit: "pax", amount: 120 },
-  { id: "retreat-overseas", name: "Overseas Corporate Retreats", shortName: "Overseas retreats", slug: "overseas-corporate-retreats", unit: "pax", amount: 400 },
-  { id: "family-day", name: "Company Family Days", shortName: "Family days", slug: "company-family-days", unit: "pax", amount: 45 },
-  { id: "festive", name: "Festive Corporate Celebrations", shortName: "Festive celebrations", slug: "festive-corporate-celebrations", unit: "pax", amount: 50 },
-  { id: "birthday", name: "Birthday Parties", shortName: "Birthday parties", slug: "birthday-parties", unit: "event", amount: 500 },
-  { id: "bachelorette", name: "Bachelorette / Hen Parties", shortName: "Hen parties", slug: "bachelorette-hen-parties", unit: "pax", amount: 65 },
-  { id: "private", name: "Private Celebrations", shortName: "Private celebrations", slug: "private-celebrations", unit: "event", amount: 800 },
-  { id: "launch", name: "Product Launches & Brand Activations", shortName: "Product launches", slug: "product-launches-and-brand-activations", unit: "event", amount: 1500 },
-  { id: "workshop", name: "Corporate Workshops", shortName: "Workshops", slug: "corporate-workshops", unit: "pax", amount: 45 },
-  { id: "popup", name: "Pop-up Markets & Bazaars", shortName: "Pop-up markets", slug: "pop-up-markets-and-bazaars", unit: "custom", amount: null },
+  { id: "team-building", name: "Corporate Team Building", shortName: "Team Building", slug: "corporate-team-building", unit: "pax", amount: 180 },
+  { id: "dinner-dance", name: "Corporate Dinner & Dance", shortName: "Dinner & Dance", slug: "corporate-dinner-and-dance", unit: "pax", amount: 250 },
+  { id: "retreat-overseas", name: "Overseas Corporate Retreats", shortName: "Overseas Retreats", slug: "overseas-corporate-retreats", unit: "pax", amount: 500 },
+  { id: "family-day", name: "Company Family Days", shortName: "Family Days", slug: "company-family-days", unit: "pax", amount: 200 },
+  { id: "conference", name: "Corporate Conference", shortName: "Conference", slug: "corporate-conference", unit: "pax", amount: 350 },
 ];
 
 export const RATE_GROUPS = [
   {
     title: "Corporate",
-    ids: ["team-building", "dinner-dance", "retreat-local", "retreat-overseas", "family-day", "workshop"],
-  },
-  {
-    title: "Celebrations & more",
-    ids: ["festive", "birthday", "bachelorette", "private", "launch", "popup"],
+    ids: ["team-building", "dinner-dance", "retreat-overseas", "family-day", "conference"],
   },
 ] as const;
 

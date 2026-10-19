@@ -17,8 +17,8 @@ export const seedVenues: Venue[] = [
     amenities: ["Bridal suite", "VIP lounge", "Valet driveway", "Coat check", "Grand piano"],
     facilities: ["Built-in stage", "House lighting rig", "Banquet kitchen", "Loading dock", "Backup power"],
     eventTypes: ["Wedding", "Celebration", "Corporate event", "Company Party", "Private Celebration"],
-    featured: true,
-    published: true,
+    featured: false,
+    published: false,
   },
   {
     id: "ven-garden",

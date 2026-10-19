@@ -98,7 +98,7 @@ export const seedPackages: EventPackage[] = [
       "Program direction for up to 90 minutes",
       "House sound and two microphones",
       "Basic stage wash",
-      "Floor manager for the evening",
+      "Floor manager for the event",
     ],
     exclusions: ["Keynote talent", "Full branding fabrication", "Catering", "Live streaming"],
     venueIds: ["ven-executive", "ven-skyline", "ven-grand", "ven-seaside"],

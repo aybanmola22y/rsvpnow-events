@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Geist_Mono, Outfit } from "next/font/google";
+import { Caprasimo, Geist_Mono, Outfit } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -8,10 +8,11 @@ const outfit = Outfit({
   variable: "--font-outfit",
 });
 
-const display = Cormorant_Garamond({
+/** Caprasimo stands in for Kaftus — warm display serif for main headings. */
+const display = Caprasimo({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-cormorant",
+  weight: "400",
+  variable: "--font-display-face",
 });
 
 const geistMono = Geist_Mono({

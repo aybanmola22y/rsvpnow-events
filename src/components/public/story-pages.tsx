@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
-import { CurrencyDisplay } from "@/components/shared/currency";
 import { Lightbox } from "@/components/shared/lightbox";
 import { useDemoStore } from "@/lib/store/demo-store";
 
@@ -21,7 +20,6 @@ export function ServicesPage() {
         <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Services</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl">The craft around the room</h1>
         <p className="mt-4 max-w-2xl text-stone-600">Coordination, catering, styling, and production for corporate events, team building, and private celebrations.</p>
-        <p className="mt-2 max-w-2xl text-sm text-stone-500">Prices are indicative and subject to event requirements.</p>
         <div className="mt-8 flex flex-wrap gap-2">
           {categories.map((item) => (
             <Button key={item} type="button" variant={item === category ? "default" : "outline"} onClick={() => setCategory(item)}>
@@ -37,7 +35,6 @@ export function ServicesPage() {
                 <p className="text-[11px] tracking-[0.22em] text-gold uppercase">{service.category}</p>
                 <h2 className="mt-2 font-display text-3xl">{service.name}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-stone-600">{service.description}</p>
-                <p className="mt-4 text-sm">From <CurrencyDisplay value={service.price} /> · {service.pricingType}</p>
                 <Button asChild variant="outline" className={`mt-4 ${publicButtonClass}`}>
                   <Link href={`/request-proposal?service=${service.id}`}>Request this service</Link>
                 </Button>

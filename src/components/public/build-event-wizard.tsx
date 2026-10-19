@@ -24,13 +24,13 @@ import { cn } from "@/lib/utils";
 const steps = [
   {
     label: "Details",
-    title: "The evening",
+    title: "Event details",
     copy: "The occasion, the date, and how many people you are hosting.",
   },
   {
     label: "Venue",
     title: "The room",
-    copy: "A house venue, or the address where the event already lives.",
+    copy: "No preference, your own venue, or let RSVPNow suggest one.",
   },
   {
     label: "Package",
@@ -40,12 +40,12 @@ const steps = [
   {
     label: "Services",
     title: "What you add",
-    copy: "Optional. Choose only what the evening still needs.",
+    copy: "Optional. Choose only what the event still needs.",
   },
   {
     label: "Client",
     title: "Who we write to",
-    copy: "The proposal is addressed to this name. A company is optional.",
+    copy: "The proposal is addressed to this name and company.",
   },
   {
     label: "Review",
@@ -60,7 +60,7 @@ type Draft = {
   startTime: string;
   endTime: string;
   guestCount: string;
-  venueMode: "our" | "client";
+  venueMode: "undecided" | "client" | "suggest";
   venueId: string;
   venueName: string;
   venueAddress: string;
@@ -70,6 +70,7 @@ type Draft = {
   serviceIds: string[];
   fullName: string;
   company: string;
+  companyAddress: string;
   email: string;
   phone: string;
 };
@@ -80,7 +81,7 @@ const emptyDraft: Draft = {
   startTime: "16:00",
   endTime: "22:00",
   guestCount: "100",
-  venueMode: "our",
+  venueMode: "undecided",
   venueId: "",
   venueName: "",
   venueAddress: "",
@@ -90,6 +91,7 @@ const emptyDraft: Draft = {
   serviceIds: [],
   fullName: "",
   company: "",
+  companyAddress: "",
   email: "",
   phone: "",
 };
@@ -137,7 +139,7 @@ export function BuildEventWizard() {
   const estimate = useMemo(() => {
     const base = estimateEvent({
       venue,
-      clientVenue: draft.venueMode === "client",
+      clientVenue: draft.venueMode !== "undecided" && draft.venueMode !== "suggest",
       eventPackage: null,
       services: selectedServices,
       guests,
@@ -158,7 +160,6 @@ export function BuildEventWizard() {
       if (!(draft.endTime > draft.startTime)) return "End time must be after the start time.";
     }
     if (current === 1) {
-      if (draft.venueMode === "our" && !draft.venueId) return "Select one of our venues.";
       if (draft.venueMode === "client" && (!draft.venueName.trim() || !draft.venueAddress.trim() || !draft.location.trim())) {
         return "Enter the venue name, address, and location.";
       }
@@ -166,6 +167,8 @@ export function BuildEventWizard() {
     if (current === 2 && draft.packageMode === "package" && !draft.eventType) return "Select an occasion or choose a custom event.";
     if (current === 4) {
       if (draft.fullName.trim().length < 2) return "Enter the client’s full name.";
+      if (!draft.company.trim()) return "Enter a company name.";
+      if (!draft.companyAddress.trim()) return "Enter a company address.";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) return "Enter a valid email address.";
       if (draft.phone.trim().length < 7) return "Enter a phone number.";
     }
@@ -190,6 +193,7 @@ export function BuildEventWizard() {
     }
     setPending(true);
     await wait();
+    const addressNote = `Company address: ${draft.companyAddress.trim()}`;
     const inquiry = submitInquiry({
       fullName: draft.fullName.trim(),
       company: draft.company.trim(),
@@ -200,14 +204,22 @@ export function BuildEventWizard() {
       startTime: draft.startTime,
       endTime: draft.endTime,
       guestCount: guests,
-      venuePreference: draft.venueMode === "our" ? draft.venueId : "client",
-      venueName: draft.venueMode === "client" ? draft.venueName : venue?.name ?? "",
-      venueAddress: draft.venueMode === "client" ? `${draft.venueAddress}, ${draft.location}` : "",
+      venuePreference: draft.venueMode,
+      venueName:
+        draft.venueMode === "client"
+          ? draft.venueName
+          : draft.venueMode === "suggest"
+            ? "RSVPNow Suggest a Venue"
+            : "",
+      venueAddress:
+        draft.venueMode === "client"
+          ? `${draft.venueAddress}, ${draft.location}`
+          : draft.companyAddress.trim(),
       packageId: draft.packageMode === "package" ? draft.packageId : "",
       serviceIds: draft.serviceIds,
       budget: estimate.total,
       theme: "",
-      specialRequests: "Prepared through Build Your Event.",
+      specialRequests: `${addressNote}\nPrepared through Build Your Event.`,
       source: "builder",
     });
     setPending(false);
@@ -218,7 +230,11 @@ export function BuildEventWizard() {
 
   const current = steps[step];
   const venueLabel =
-    draft.venueMode === "our" ? venue?.name ?? "Not chosen" : draft.venueName.trim() || "Client venue";
+    draft.venueMode === "client"
+      ? draft.venueName.trim() || "Your own venue"
+      : draft.venueMode === "suggest"
+        ? "RSVPNow Suggest a Venue"
+        : "No preference yet";
   const packageLabel =
     draft.packageMode === "custom" ? "Custom event" : selectedRate.name;
 
@@ -288,48 +304,25 @@ export function BuildEventWizard() {
                   <div className="space-y-5">
                     <Choice
                       value={draft.venueMode}
-                      onChange={(value) => patch({ venueMode: value as Draft["venueMode"] })}
+                      onChange={(value) => patch({ venueMode: value as Draft["venueMode"], venueId: "" })}
                       options={[
-                        { value: "our", label: "Our venue" },
-                        { value: "client", label: "Client venue" },
+                        { value: "undecided", label: "No preference yet" },
+                        { value: "client", label: "Your own venue" },
+                        { value: "suggest", label: "RSVPNow Suggest a Venue" },
                       ]}
                     />
-                    {draft.venueMode === "our" ? (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {venues.map((item) => {
-                          const selected = draft.venueId === item.id;
-                          return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => patch({ venueId: item.id })}
-                              className={cn(
-                                "border bg-white text-left",
-                                selected ? "border-ink" : "border-stone-200 hover:border-stone-400",
-                              )}
-                            >
-                              <img src={item.images[0]} alt="" className="aspect-[3/2] w-full object-cover" />
-                              <span className="block p-4">
-                                <span className="flex items-start justify-between gap-3">
-                                  <span className="font-display text-2xl leading-none">{item.name}</span>
-                                  {selected ? <SelectedMark /> : null}
-                                </span>
-                                <span className="mt-2 block text-sm text-stone-500">{item.location}</span>
-                                <span className="mt-3 flex items-baseline justify-between gap-3 text-sm">
-                                  <span className="text-stone-500">{item.minCapacity}–{item.maxCapacity} guests</span>
-                                  <span>From <CurrencyDisplay value={item.startingPrice} /></span>
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
+                    {draft.venueMode === "client" ? (
                       <div className="grid gap-4">
                         <Field label="Venue name"><Input className={publicControlClass} value={draft.venueName} onChange={(event) => patch({ venueName: event.target.value })} /></Field>
                         <Field label="Address"><Input className={publicControlClass} value={draft.venueAddress} onChange={(event) => patch({ venueAddress: event.target.value })} /></Field>
                         <Field label="Location"><Input className={publicControlClass} value={draft.location} onChange={(event) => patch({ location: event.target.value })} /></Field>
                       </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-stone-600">
+                        {draft.venueMode === "suggest"
+                          ? "Share the brief and guest count. We will recommend a suitable venue."
+                          : "Leave the room open for now. We will suggest options with the quotation."}
+                      </p>
                     )}
                   </div>
                 )}
@@ -375,7 +368,7 @@ export function BuildEventWizard() {
                       </div>
                     ) : (
                       <div className="border border-stone-200 bg-stone-50 px-5 py-8">
-                        <p className="font-display text-3xl">A custom evening</p>
+                        <p className="font-display text-3xl">A custom event</p>
                         <p className="mt-2 max-w-lg text-sm leading-relaxed text-stone-600">
                           No package is applied. The estimate uses the venue and any services you add on the next step.
                         </p>
@@ -413,10 +406,7 @@ export function BuildEventWizard() {
                                   {selected ? <SelectedMark /> : null}
                                 </span>
                                 <span className="mt-2 line-clamp-2 text-sm leading-relaxed text-stone-600">{service.description}</span>
-                                <span className="mt-auto pt-4 text-sm">
-                                  <CurrencyDisplay value={service.price} />
-                                  <span className="text-stone-500"> · {service.pricingType}</span>
-                                </span>
+                                <span className="mt-auto pt-4 text-sm text-stone-500">{service.pricingType}</span>
                               </button>
                             );
                           })}
@@ -429,7 +419,8 @@ export function BuildEventWizard() {
                 {step === 4 && (
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Full name"><Input className={publicControlClass} value={draft.fullName} onChange={(event) => patch({ fullName: event.target.value })} /></Field>
-                    <Field label="Company" hint="Optional"><Input className={publicControlClass} value={draft.company} onChange={(event) => patch({ company: event.target.value })} /></Field>
+                    <Field label="Company"><Input className={publicControlClass} value={draft.company} onChange={(event) => patch({ company: event.target.value })} /></Field>
+                    <Field label="Company address"><Input className={publicControlClass} value={draft.companyAddress} onChange={(event) => patch({ companyAddress: event.target.value })} /></Field>
                     <Field label="Email"><Input type="email" className={publicControlClass} value={draft.email} onChange={(event) => patch({ email: event.target.value })} /></Field>
                     <Field label="Phone"><Input className={publicControlClass} value={draft.phone} onChange={(event) => patch({ phone: event.target.value })} /></Field>
                   </div>

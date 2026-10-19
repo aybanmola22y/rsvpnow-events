@@ -572,7 +572,7 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: "rsvpnow-demo-v1",
-      version: 7,
+      version: 8,
       migrate: (persisted) => {
         const state = persisted as DemoData;
         const eventTypes: Record<string, string> = {
@@ -610,6 +610,8 @@ export const useDemoStore = create<DemoStore>()(
               amenities: next.amenities,
               facilities: next.facilities,
               eventTypes: next.eventTypes,
+              featured: next.featured,
+              published: next.published,
             };
           });
         }

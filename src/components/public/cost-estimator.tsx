@@ -72,26 +72,28 @@ export function CostEstimator() {
           <div className="flex flex-col gap-8 px-5 py-7 md:px-8 md:py-9">
             <div>
               <p className="text-[11px] tracking-[0.22em] text-gold uppercase">The occasion</p>
-              <div className="mt-3 grid grid-cols-2 border border-stone-200">
-                {RATE_GROUPS.map((item, index) => {
-                  const active = index === groupIndex;
-                  return (
-                    <button
-                      key={item.title}
-                      type="button"
-                      onClick={() => pickGroup(index)}
-                      className={cn(
-                        "h-11 text-[11px] tracking-[0.14em] uppercase transition",
-                        active ? "bg-ink text-white" : "bg-white text-stone-500 hover:text-ink",
-                      )}
-                    >
-                      {item.title === "Celebrations & more" ? "Celebrations" : item.title}
-                    </button>
-                  );
-                })}
-              </div>
+              {RATE_GROUPS.length > 1 ? (
+                <div className="mt-3 grid grid-cols-2 border border-stone-200">
+                  {RATE_GROUPS.map((item, index) => {
+                    const active = index === groupIndex;
+                    return (
+                      <button
+                        key={item.title}
+                        type="button"
+                        onClick={() => pickGroup(index)}
+                        className={cn(
+                          "h-11 text-[11px] tracking-[0.14em] uppercase transition",
+                          active ? "bg-ink text-white" : "bg-white text-stone-500 hover:text-ink",
+                        )}
+                      >
+                        {item.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
 
-              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              <ul className={cn("grid gap-2 sm:grid-cols-2", RATE_GROUPS.length > 1 ? "mt-4" : "mt-3")}>
                 {groupRates.map((rate) => {
                   const active = rate.id === selected.id;
                   return (
@@ -150,7 +152,7 @@ export function CostEstimator() {
                 value={guests}
                 onChange={(event) => setGuests(Number(event.target.value))}
                 aria-label="Number of guests"
-                className="mt-5 w-full accent-[#b7a48a]"
+                className="mt-5 w-full accent-[#111111]"
               />
               <div className="mt-2 flex justify-between text-xs text-stone-400">
                 <span>10</span>
