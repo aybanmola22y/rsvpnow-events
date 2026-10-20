@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/shared/chrome";
 import { TurnstileWidget } from "@/components/public/turnstile-widget";
 import { DEMO_ADMIN, useSessionStore } from "@/lib/auth/session";
-import { wait } from "@/lib/format";
 import { seedSettings, seedUsers } from "@/lib/mock-data/clients";
 import { shouldShowTurnstile } from "@/lib/turnstile/env";
 
@@ -66,8 +65,9 @@ const desk = [
 ];
 
 export function LoginForm() {
-  const login = useSessionStore((state) => state.login);
+  const applySession = useSessionStore((state) => state.applySession);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const turnstileOn = shouldShowTurnstile();
   const [gateReady, setGateReady] = useState(!turnstileOn);
   const [gateChecking, setGateChecking] = useState(false);
@@ -125,15 +125,42 @@ export function LoginForm() {
   async function onSubmit(values: FormValues) {
     setPending(true);
     setError("");
-    await wait(500);
-    const ok = login(values.email, values.password);
-    setPending(false);
-    if (!ok) {
-      setError("Those credentials do not match the demo account.");
-      return;
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        session?: { email: string; name: string; role: string };
+        error?: string;
+        attemptsLeft?: number;
+      };
+
+      if (!response.ok || !data.ok || !data.session) {
+        const suffix =
+          typeof data.attemptsLeft === "number" && data.attemptsLeft > 0
+            ? ` (${data.attemptsLeft} attempt${data.attemptsLeft === 1 ? "" : "s"} left)`
+            : "";
+        setError((data.error || "Sign-in failed.") + suffix);
+        return;
+      }
+
+      applySession(data.session);
+      toast.success("Welcome back.");
+      const next = searchParams.get("next");
+      const safeNext =
+        next && next.startsWith("/admin") && !next.startsWith("/admin/login") ? next : "/admin";
+      router.replace(safeNext);
+    } catch {
+      setError("Could not reach the sign-in service. Try again.");
+    } finally {
+      setPending(false);
     }
-    toast.success("Welcome back.");
-    router.push("/admin");
   }
 
   function signInAsDemo() {

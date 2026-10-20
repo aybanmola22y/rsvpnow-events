@@ -1,9 +1,11 @@
 "use client";
 
 import { create } from "zustand";
+import { clearStaffAuthCookie, setStaffAuthCookie } from "@/lib/auth/cookie";
 
 const SESSION_KEY = "aurelia-demo-session";
 
+/** Public demo hint shown on the login screen (password still verified server-side). */
 export const DEMO_ADMIN = {
   email: "admin@eventdemo.com",
   password: "admin123",
@@ -21,6 +23,9 @@ type SessionState = {
   ready: boolean;
   session: DemoSession | null;
   hydrate: () => void;
+  /** Apply a session returned from /api/auth/login */
+  applySession: (session: DemoSession) => void;
+  /** @deprecated Prefer server /api/auth/login — kept for compatibility */
   login: (email: string, password: string) => boolean;
   logout: () => void;
 };
@@ -38,29 +43,38 @@ function readSession(): DemoSession | null {
   }
 }
 
+function persistSession(session: DemoSession) {
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  setStaffAuthCookie();
+}
+
 /**
- * Demo-only session. Replace this module with a real auth client later.
- * The admin shell reads `session` and does not talk to localStorage itself.
+ * Demo session. Password checks go through /api/auth/login (anti-brute-force).
+ * Cookie is also set httpOnly by the login API for middleware protection.
  */
 export const useSessionStore = create<SessionState>((set) => ({
   ready: false,
   session: null,
-  hydrate: () => set({ session: readSession(), ready: true }),
-  login: (email, password) => {
-    const matches =
-      email.trim().toLowerCase() === DEMO_ADMIN.email && password === DEMO_ADMIN.password;
-    if (!matches) return false;
-    const session: DemoSession = {
-      email: DEMO_ADMIN.email,
-      name: DEMO_ADMIN.name,
-      role: DEMO_ADMIN.role,
-    };
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  hydrate: () => {
+    const session = readSession();
+    if (session) setStaffAuthCookie();
+    else clearStaffAuthCookie();
     set({ session, ready: true });
-    return true;
+  },
+  applySession: (session) => {
+    persistSession(session);
+    set({ session, ready: true });
+  },
+  login: (email, password) => {
+    // Client-side path disabled for brute-force safety — always use API.
+    void email;
+    void password;
+    return false;
   },
   logout: () => {
     window.localStorage.removeItem(SESSION_KEY);
+    clearStaffAuthCookie();
+    void fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     set({ session: null, ready: true });
   },
 }));
