@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -10,9 +10,34 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/shared/chrome";
+import { TurnstileWidget } from "@/components/public/turnstile-widget";
 import { DEMO_ADMIN, useSessionStore } from "@/lib/auth/session";
 import { wait } from "@/lib/format";
 import { seedSettings, seedUsers } from "@/lib/mock-data/clients";
+import { shouldShowTurnstile } from "@/lib/turnstile/env";
+
+const GATE_KEY = "rsvpnow-admin-turnstile";
+const GATE_TTL_MS = 1000 * 60 * 15;
+
+function readGatePassed() {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = sessionStorage.getItem(GATE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { at?: number };
+    if (!parsed.at || Date.now() - parsed.at > GATE_TTL_MS) {
+      sessionStorage.removeItem(GATE_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function writeGatePassed() {
+  sessionStorage.setItem(GATE_KEY, JSON.stringify({ at: Date.now() }));
+}
 
 const schema = z.object({
   email: z.email("Enter the demo email"),
@@ -43,6 +68,12 @@ const desk = [
 export function LoginForm() {
   const login = useSessionStore((state) => state.login);
   const router = useRouter();
+  const turnstileOn = shouldShowTurnstile();
+  const [gateReady, setGateReady] = useState(!turnstileOn);
+  const [gateChecking, setGateChecking] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const [gateError, setGateError] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const form = useForm<FormValues>({
@@ -54,6 +85,42 @@ export function LoginForm() {
     day: "numeric",
     month: "long",
   }).format(new Date());
+
+  useEffect(() => {
+    if (!turnstileOn) {
+      setGateReady(true);
+      return;
+    }
+    setGateReady(readGatePassed());
+  }, [turnstileOn]);
+
+  async function continuePastGate() {
+    if (!turnstileToken) {
+      setGateError("Complete the security check to continue.");
+      return;
+    }
+    setGateChecking(true);
+    setGateError("");
+    try {
+      const response = await fetch("/api/turnstile/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Security check failed.");
+      }
+      writeGatePassed();
+      setGateReady(true);
+    } catch (err) {
+      setGateError(err instanceof Error ? err.message : "Security check failed.");
+      setTurnstileToken(null);
+      setTurnstileReset((value) => value + 1);
+    } finally {
+      setGateChecking(false);
+    }
+  }
 
   async function onSubmit(values: FormValues) {
     setPending(true);
@@ -134,46 +201,77 @@ export function LoginForm() {
       </div>
 
       <div className="flex items-center justify-center px-6 py-10 sm:px-10">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-md rounded-lg border border-black/5 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-[11px] font-medium tracking-[0.14em] text-neutral-400 uppercase">Staff access</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-950">Sign in</h2>
-          <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-            Guests stay on the public site. After this you land on today&apos;s book: inquiries waiting on a reply, quotes still out, and the dates already confirmed.
-          </p>
-          <div className="mt-6 space-y-4">
-            <Field label="Email" error={form.formState.errors.email?.message}>
-              <Input type="email" className="h-11 rounded-md border-black/10 bg-white shadow-none" autoComplete="username" {...form.register("email")} />
-            </Field>
-            <Field label="Password" error={form.formState.errors.password?.message}>
-              <Input type="password" className="h-11 rounded-md border-black/10 bg-white shadow-none" autoComplete="current-password" {...form.register("password")} />
-            </Field>
-          </div>
-          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-          <Button type="submit" disabled={pending} className="mt-6 h-11 w-full bg-neutral-950 text-white hover:bg-neutral-800">
-            {pending ? "Signing in..." : "Sign in"}
-          </Button>
-          <div className="mt-6 rounded-lg border border-black/5 bg-[#f4f5f7] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Demo account</p>
-                <p className="mt-1.5 font-semibold text-neutral-950">{DEMO_ADMIN.name}</p>
-                <p className="text-sm text-neutral-500">{DEMO_ADMIN.role} · the only login in this demo</p>
-              </div>
+        {!gateReady ? (
+          <div className="w-full max-w-md rounded-lg border border-black/5 bg-white p-6 shadow-sm sm:p-8">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-neutral-400 uppercase">Staff access</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-950">Security check</h2>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+              Complete the check below before the staff sign-in form is shown.
+            </p>
+            <div className="mt-6">
+              <TurnstileWidget
+                key={turnstileReset}
+                onToken={setTurnstileToken}
+                className="w-full"
+              />
             </div>
-            <dl className="mt-3 grid grid-cols-[5.5rem_1fr] gap-y-1 text-sm">
-              <dt className="text-neutral-400">Email</dt>
-              <dd className="font-medium text-neutral-950">{DEMO_ADMIN.email}</dd>
-              <dt className="text-neutral-400">Password</dt>
-              <dd className="font-medium text-neutral-950">{DEMO_ADMIN.password}</dd>
-            </dl>
-            <Button type="button" variant="outline" disabled={pending} onClick={signInAsDemo} className="mt-4 h-10 w-full border-black/10 bg-white">
-              Sign in as {DEMO_ADMIN.name}
+            {gateError ? <p className="mt-3 text-sm text-red-600">{gateError}</p> : null}
+            <Button
+              type="button"
+              disabled={gateChecking || !turnstileToken}
+              onClick={() => void continuePastGate()}
+              className="mt-6 h-11 w-full bg-neutral-950 text-white hover:bg-neutral-800"
+            >
+              {gateChecking ? "Verifying…" : "Continue to sign in"}
             </Button>
+            <p className="mt-5 text-center text-sm text-neutral-500">
+              <Link href="/" className="font-medium text-neutral-950 underline-offset-4 hover:underline">
+                Back to the public site
+              </Link>
+            </p>
           </div>
-          <p className="mt-5 text-center text-sm text-neutral-500">
-            <Link href="/" className="font-medium text-neutral-950 underline-offset-4 hover:underline">Back to the public site</Link>
-          </p>
-        </form>
+        ) : (
+          <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-md rounded-lg border border-black/5 bg-white p-6 shadow-sm sm:p-8">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-neutral-400 uppercase">Staff access</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-neutral-950">Sign in</h2>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+              Guests stay on the public site. After this you land on today&apos;s book: inquiries waiting on a reply, quotes still out, and the dates already confirmed.
+            </p>
+            <div className="mt-6 space-y-4">
+              <Field label="Email" error={form.formState.errors.email?.message}>
+                <Input type="email" className="h-11 rounded-md border-black/10 bg-white shadow-none" autoComplete="username" {...form.register("email")} />
+              </Field>
+              <Field label="Password" error={form.formState.errors.password?.message}>
+                <Input type="password" className="h-11 rounded-md border-black/10 bg-white shadow-none" autoComplete="current-password" {...form.register("password")} />
+              </Field>
+            </div>
+            {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+            <Button type="submit" disabled={pending} className="mt-6 h-11 w-full bg-neutral-950 text-white hover:bg-neutral-800">
+              {pending ? "Signing in..." : "Sign in"}
+            </Button>
+            <div className="mt-6 rounded-lg border border-black/5 bg-[#f4f5f7] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Demo account</p>
+                  <p className="mt-1.5 font-semibold text-neutral-950">{DEMO_ADMIN.name}</p>
+                  <p className="text-sm text-neutral-500">{DEMO_ADMIN.role} · the only login in this demo</p>
+                </div>
+              </div>
+              <dl className="mt-3 grid grid-cols-[5.5rem_1fr] gap-y-1 text-sm">
+                <dt className="text-neutral-400">Email</dt>
+                <dd className="font-medium text-neutral-950">{DEMO_ADMIN.email}</dd>
+                <dt className="text-neutral-400">Password</dt>
+                <dd className="font-medium text-neutral-950">{DEMO_ADMIN.password}</dd>
+              </dl>
+              <Button type="button" variant="outline" disabled={pending} onClick={signInAsDemo} className="mt-4 h-10 w-full border-black/10 bg-white">
+                Sign in as {DEMO_ADMIN.name}
+              </Button>
+            </div>
+            <p className="mt-5 text-center text-sm text-neutral-500">
+              <Link href="/" className="font-medium text-neutral-950 underline-offset-4 hover:underline">Back to the public site</Link>
+            </p>
+          </form>
+        )}
       </div>
     </div>
   );

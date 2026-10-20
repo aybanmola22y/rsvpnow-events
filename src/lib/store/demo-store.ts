@@ -191,7 +191,8 @@ function quoteLinesFromInquiry(data: DemoData, inquiry: Inquiry): QuotationLine[
 
 /**
  * Frontend store for the demo. UI should call these actions instead of
- * reading localStorage. A future API service can replace this module.
+ * reading localStorage. When NEXT_PUBLIC_USE_SUPABASE=true, public writes
+ * (e.g. inquiries) go through /api/inquiries → Supabase instead.
  */
 export const useDemoStore = create<DemoStore>()(
   persist(

@@ -21,8 +21,10 @@ import { CurrencyDisplay } from "@/components/shared/currency";
 import { ProposalSuccess } from "@/components/public/contact-page";
 import { EVENT_RATES } from "@/lib/event-rates";
 import { formatDate, formatPeso, formatTime, wait } from "@/lib/format";
+import { isSupabaseEnabled } from "@/lib/supabase/env";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const schema = z.object({
   fullName: z.string().min(2, "Enter your full name"),
@@ -121,7 +123,6 @@ export function RequestProposalForm() {
 
   async function onSubmit(values: FormValues) {
     setPending(true);
-    await wait();
     const venue = venues.find((item) => item.id === values.venuePreference);
     const notes = [
       `Company address: ${values.companyAddress}`,
@@ -130,7 +131,8 @@ export function RequestProposalForm() {
     ]
       .filter(Boolean)
       .join("\n");
-    const inquiry = submitInquiry({
+
+    const payload = {
       fullName: values.fullName,
       company: values.company,
       email: values.email,
@@ -151,10 +153,32 @@ export function RequestProposalForm() {
       budget: values.budget,
       theme: values.theme,
       specialRequests: notes,
-      source: "website",
-    });
-    setPending(false);
-    setReference(inquiry.number);
+      source: "website" as const,
+    };
+
+    try {
+      if (isSupabaseEnabled()) {
+        const response = await fetch("/api/inquiries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = (await response.json()) as { number?: string; error?: string };
+        if (!response.ok || !data.number) {
+          throw new Error(data.error || "Could not submit the inquiry.");
+        }
+        setReference(data.number);
+        return;
+      }
+
+      await wait();
+      const inquiry = submitInquiry(payload);
+      setReference(inquiry.number);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit the inquiry.");
+    } finally {
+      setPending(false);
+    }
   }
 
   const values = useWatch({ control: form.control });

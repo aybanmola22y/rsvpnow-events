@@ -36,7 +36,7 @@ export const seedSettings: WebsiteSettings = {
   instagram: "https://www.instagram.com/rsvpnowevents",
   tiktok: "",
   youtube: "",
-  website: "https://www.novanorthsg.com",
+  website: "https://rsvpnowevents.com",
   businessHours: "Open 24 hours",
 };
 

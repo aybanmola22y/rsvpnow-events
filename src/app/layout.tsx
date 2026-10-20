@@ -48,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
+        <link rel="preconnect" href="https://challenges.cloudflare.com" />
       </head>
       <body className="min-h-full bg-background text-foreground">
         <Providers>{children}</Providers>
