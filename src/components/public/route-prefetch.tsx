@@ -19,23 +19,28 @@ export function RoutePrefetch() {
   const router = useRouter();
 
   useEffect(() => {
-    const idle =
-      "requestIdleCallback" in window
-        ? window.requestIdleCallback
-        : (cb: IdleRequestCallback) => window.setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 16 } as IdleDeadline), 200);
+    let cancelled = false;
 
-    const id = idle(() => {
+    const run = () => {
+      if (cancelled) return;
       for (const href of ROUTES) {
         router.prefetch(href);
       }
-    });
+    };
+
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(run);
+    } else {
+      timeoutId = setTimeout(run, 200);
+    }
 
     return () => {
-      if ("cancelIdleCallback" in window) {
-        window.cancelIdleCallback(id as number);
-      } else {
-        window.clearTimeout(id as number);
-      }
+      cancelled = true;
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
   }, [router]);
 
