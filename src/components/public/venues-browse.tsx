@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -124,14 +125,24 @@ export function VenuesPage() {
           <div className="mt-6 grid items-stretch gap-6 md:grid-cols-2">
             {filtered.map((venue) => (
               <article key={venue.id} className="overflow-hidden bg-white">
-                <img src={venue.images[0]} alt={venue.name} className="aspect-[3/2] w-full object-cover" />
+                <div className="relative aspect-[3/2] w-full">
+                  <Image
+                    src={venue.images[0]}
+                    alt={venue.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                </div>
                 <div className="space-y-3 p-6">
                   <h2 className="font-display text-3xl">{venue.name}</h2>
                   <p className="text-sm text-muted-foreground">{venue.location} · {venue.minCapacity}–{venue.maxCapacity} guests</p>
                   <p className="text-sm leading-relaxed text-stone-600">{venue.shortDescription}</p>
                   <p className="text-sm">From <CurrencyDisplay value={venue.startingPrice} /></p>
                   <Button asChild className={publicButtonClass}>
-                    <Link href={`/venues/${venue.slug}`}>View Venue</Link>
+                    <Link href={`/venues/${venue.slug}`} prefetch>
+                      View Venue
+                    </Link>
                   </Button>
                 </div>
               </article>
@@ -168,7 +179,16 @@ export function VenueDetail({ slug }: { slug: string }) {
       <div className="bg-white">
         <Container className="grid items-start gap-10 py-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
           <div>
-            <img src={image} alt={venue.name} className="aspect-[3/2] w-full object-cover" />
+            <div className="relative aspect-[3/2] w-full">
+              <Image
+                src={image}
+                alt={venue.name}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 60vw"
+                className="object-cover"
+              />
+            </div>
             <div className="mt-3 grid grid-cols-4 gap-3">
               {venue.images.map((src, index) => (
                 <button
@@ -177,11 +197,13 @@ export function VenueDetail({ slug }: { slug: string }) {
                   onClick={() => setActive(index)}
                   aria-label={`Show photograph ${index + 1} of ${venue.name}`}
                   className={cn(
-                    "overflow-hidden border-2",
+                    "relative overflow-hidden border-2",
                     index === active ? "border-gold" : "border-transparent opacity-70 hover:opacity-100",
                   )}
                 >
-                  <img src={src} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <span className="relative block aspect-[4/3] w-full">
+                    <Image src={src} alt="" fill sizes="120px" className="object-cover" />
+                  </span>
                 </button>
               ))}
             </div>

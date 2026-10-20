@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
 import { BrandMark } from "@/components/public/brand-mark";
+import { RoutePrefetch } from "@/components/public/route-prefetch";
 import { SmoothScroll } from "@/components/public/smooth-scroll";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
@@ -55,9 +56,10 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <SmoothScroll>
     <div className="flex min-h-screen flex-col bg-ivory text-ink">
+      <RoutePrefetch />
       <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-white/90 backdrop-blur-md">
         <Container className="flex h-20 items-center justify-between gap-4">
-          <Link href="/" className="min-w-0">
+          <Link href="/" prefetch className="min-w-0">
             <BrandMark />
           </Link>
           <nav className="hidden items-center gap-5 xl:gap-8 lg:flex">
@@ -65,6 +67,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch
                 className={cn(
                   "text-lg text-stone-600 transition hover:text-ink",
                   isActive(pathname, link.href) && "text-ink",
@@ -76,7 +79,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild className={cn(publicButtonClass, "hidden sm:inline-flex")}>
-              <Link href="/request-proposal">Request a quotation</Link>
+              <Link href="/request-proposal" prefetch>
+                Request a quotation
+              </Link>
             </Button>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -117,6 +122,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                     <Link
                       key={link.href}
                       href={link.href}
+                      prefetch
                       onClick={() => setOpen(false)}
                       style={{ animationDelay: open ? `${80 + index * 60}ms` : "0ms" }}
                       className={cn(

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,16 @@ export function PackageDetail({ slug }: { slug: string }) {
   return (
     <div className="pb-16">
       <Container className="grid gap-8 py-12 lg:grid-cols-[1.1fr_0.9fr]">
-        <img src={eventPackage.image} alt={eventPackage.name} className="h-[460px] w-full object-cover" />
+        <div className="relative h-[460px] w-full">
+          <Image
+            src={eventPackage.image}
+            alt={eventPackage.name}
+            fill
+            priority
+            sizes="(max-width: 1024px) 100vw, 55vw"
+            className="object-cover"
+          />
+        </div>
         <div>
           <p className="text-[11px] tracking-[0.22em] text-gold uppercase">{eventPackage.eventType}</p>
           <h1 className="mt-3 font-display text-5xl">{eventPackage.name}</h1>

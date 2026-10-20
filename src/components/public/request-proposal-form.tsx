@@ -38,7 +38,7 @@ const schema = z.object({
   venuePreference: z.string().min(1, "Choose a venue preference"),
   packageId: z.string(),
   serviceIds: z.array(z.string()),
-  budget: z.number().min(0, "Enter a budget"),
+  budget: z.number({ error: "Enter a budget" }).positive("Enter a budget"),
   theme: z.string(),
   specialRequests: z.string(),
   otherRequirements: z.string(),
@@ -88,7 +88,7 @@ export function RequestProposalForm() {
       venuePreference: "undecided",
       packageId: "",
       serviceIds: [],
-      budget: 100000,
+      budget: undefined as unknown as number,
       theme: "",
       specialRequests: "",
       otherRequirements: "",
@@ -209,8 +209,14 @@ export function RequestProposalForm() {
                 <p className="text-[11px] tracking-[0.18em] text-stone-500 uppercase">This request</p>
                 <p className="text-xs text-stone-400">{filledCount} of {summaryFacts.length} filled</p>
               </div>
-              <p className="font-display text-2xl leading-none tabular-nums md:text-3xl">
-                <CurrencyDisplay value={Number(values.budget) || 0} />
+              <p className="font-display text-2xl leading-none tabular-nums text-stone-400 md:text-3xl">
+                {Number(values.budget) > 0 ? (
+                  <span className="text-ink">
+                    <CurrencyDisplay value={Number(values.budget)} />
+                  </span>
+                ) : (
+                  "S$ —"
+                )}
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-px bg-stone-100 sm:grid-cols-3 lg:grid-cols-6">
@@ -261,7 +267,7 @@ export function RequestProposalForm() {
                   <Fill label="Budget" error={form.formState.errors.budget?.message} className="sm:col-span-2">
                     <div className="relative">
                       <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-stone-400">S$</span>
-                      <Input type="number" min={0} placeholder="100000" className={cn(fillControl, "pl-9")} {...form.register("budget", { valueAsNumber: true })} />
+                      <Input type="number" min={1} placeholder="Your budget" className={cn(fillControl, "pl-9")} {...form.register("budget", { valueAsNumber: true })} />
                     </div>
                   </Fill>
                 </div>

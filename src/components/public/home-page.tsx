@@ -1,14 +1,31 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Container, publicButtonClass } from "@/components/shared/chrome";
-import { CostEstimator } from "@/components/public/cost-estimator";
 import { EVENT_RATES, RATE_GROUPS, shortRate } from "@/lib/event-rates";
 import { photos } from "@/lib/images";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
+
+const CostEstimator = dynamic(
+  () =>
+    import("@/components/public/cost-estimator").then((mod) => ({
+      default: mod.CostEstimator,
+    })),
+  {
+    loading: () => (
+      <section className="border-y border-stone-200 bg-ivory py-16 md:py-20">
+        <Container>
+          <div className="h-[28rem] animate-pulse border border-stone-200 bg-white" />
+        </Container>
+      </section>
+    ),
+  },
+);
 
 const reasons = [
   {
@@ -23,6 +40,10 @@ const reasons = [
     title: "A calm host on the day",
     copy: "Coordinators run the timing so speeches, meals, and dancing happen without anyone in your family managing a headset.",
   },
+  {
+    title: "Singapore rooms we know",
+    copy: "We work the hotels and spaces that suit your guest list, so capacity, flow, and load-in are settled before anyone books flights.",
+  },
 ];
 
 export function HomePage() {
@@ -33,10 +54,13 @@ export function HomePage() {
   return (
     <div>
       <section className="relative min-h-[calc(100svh-5rem)] overflow-hidden">
-        <img
+        <Image
           src="/brand/hero.jpg"
           alt="Event hall set for a formal gathering"
-          className="absolute inset-0 h-full w-full object-cover"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/25" />
         <Container className="relative flex min-h-[calc(100svh-5rem)] items-end py-16 md:items-center">
@@ -50,14 +74,18 @@ export function HomePage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild className={cn(publicButtonClass, "bg-white text-ink hover:bg-stone-100")}>
-                <Link href="/request-proposal">Request a quotation</Link>
+                <Link href="/request-proposal" prefetch>
+                  Request a quotation
+                </Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 className={cn(publicButtonClass, "border-white/70 bg-transparent text-white hover:bg-white hover:text-ink")}
               >
-                <Link href="/services">View services</Link>
+                <Link href="/services" prefetch>
+                  View services
+                </Link>
               </Button>
             </div>
           </div>
@@ -76,7 +104,9 @@ export function HomePage() {
               The work is planned properly and priced so a company dinner or a family celebration stays within reach. Prices are indicative and subject to event requirements.
             </p>
             <Button asChild className={cn(publicButtonClass, "mt-8")}>
-              <Link href="/request-proposal">Request a quotation</Link>
+              <Link href="/request-proposal" prefetch>
+                Request a quotation
+              </Link>
             </Button>
           </div>
         </Container>
@@ -96,7 +126,9 @@ export function HomePage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild className={publicButtonClass}>
-                  <Link href="/request-proposal">Request a quotation</Link>
+                  <Link href="/request-proposal" prefetch>
+                    Request a quotation
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -136,9 +168,16 @@ export function HomePage() {
               <Link
                 key={service.id}
                 href={`/services#${service.slug}`}
+                prefetch
                 className="group relative aspect-[3/2] overflow-hidden"
               >
-                <img src={service.image} alt="" className="h-full w-full object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0" />
+                <Image
+                  src={service.image}
+                  alt={service.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
                 <div className="absolute inset-x-0 bottom-0 p-5 text-white">
                   <h3 className="font-display text-3xl">{service.name}</h3>
@@ -168,7 +207,13 @@ export function HomePage() {
       <CostEstimator />
 
       <section className="relative overflow-hidden py-24">
-        <img src={photos.garden} alt="" className="absolute inset-0 h-full w-full object-cover grayscale" />
+        <Image
+          src={photos.garden}
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover grayscale"
+        />
         <div className="absolute inset-0 bg-black/60" />
         <Container className="relative text-center text-white">
           <h2 className="font-display text-5xl md:text-6xl">Planning your next event?</h2>
@@ -177,14 +222,18 @@ export function HomePage() {
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild className={cn(publicButtonClass, "bg-white text-ink hover:bg-stone-100")}>
-              <Link href="/request-proposal">Request a quotation</Link>
+              <Link href="/request-proposal" prefetch>
+                Request a quotation
+              </Link>
             </Button>
             <Button
               asChild
               variant="outline"
               className={cn(publicButtonClass, "border-white/70 bg-transparent text-white hover:bg-white hover:text-ink")}
             >
-              <Link href="/contact">Contact</Link>
+              <Link href="/contact" prefetch>
+                Contact
+              </Link>
             </Button>
           </div>
         </Container>

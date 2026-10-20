@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export function ServicesPage() {
   return (
     <div className="py-16">
       <Container>
-        <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Services</p>
+        <p className="text-[11px] tracking-[0.22em] text-stone-500 uppercase">Services</p>
         <h1 className="mt-3 font-display text-5xl md:text-6xl">The craft around the room</h1>
         <p className="mt-4 max-w-2xl text-stone-600">Coordination, catering, styling, and production for corporate events, team building, and private celebrations.</p>
         <div className="mt-8 flex flex-wrap gap-2">
@@ -30,13 +31,23 @@ export function ServicesPage() {
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           {visible.map((service) => (
             <article id={service.slug} key={service.id} className="grid overflow-hidden bg-white sm:grid-cols-[180px_1fr]">
-              <img src={service.image} alt="" className="h-48 w-full object-cover sm:h-full" />
+              <div className="relative h-48 w-full sm:h-auto sm:min-h-full">
+                <Image
+                  src={service.image}
+                  alt={service.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 180px"
+                  className="object-cover"
+                />
+              </div>
               <div className="p-6">
-                <p className="text-[11px] tracking-[0.22em] text-gold uppercase">{service.category}</p>
+                <p className="text-[11px] tracking-[0.22em] text-stone-500 uppercase">{service.category}</p>
                 <h2 className="mt-2 font-display text-3xl">{service.name}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-stone-600">{service.description}</p>
                 <Button asChild variant="outline" className={`mt-4 ${publicButtonClass}`}>
-                  <Link href={`/request-proposal?service=${service.id}`}>Request this service</Link>
+                  <Link href={`/request-proposal?service=${service.id}`} prefetch>
+                    Request this service
+                  </Link>
                 </Button>
               </div>
             </article>
