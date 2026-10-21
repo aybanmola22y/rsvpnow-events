@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Caprasimo, Geist_Mono, Outfit } from "next/font/google";
 import { Providers } from "@/components/providers";
+import {
+  absoluteUrl,
+  defaultDescription,
+  getSiteUrl,
+  siteKeywords,
+  siteName,
+} from "@/lib/seo";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -27,12 +34,54 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "RSVPNow",
-    template: "%s · RSVPNow",
+    default: `${siteName} · Event Planner Singapore`,
+    template: `%s · ${siteName}`,
   },
-  description:
-    "RSVPNow is a Singapore-based events company. You bring the people. We'll take care of the rest.",
+  description: defaultDescription,
+  keywords: siteKeywords,
+  applicationName: siteName,
+  authors: [{ name: siteName, url: getSiteUrl() }],
+  creator: siteName,
+  publisher: siteName,
+  category: "events",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_SG",
+    url: getSiteUrl(),
+    siteName,
+    title: `${siteName} · Event Planner Singapore`,
+    description: defaultDescription,
+    images: [
+      {
+        url: absoluteUrl("/brand/hero.jpg"),
+        width: 1600,
+        height: 900,
+        alt: `${siteName} — Singapore event planning`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteName} · Event Planner Singapore`,
+    description: defaultDescription,
+    images: [absoluteUrl("/brand/hero.jpg")],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   other: {
     "dns-prefetch": "https://images.unsplash.com",
   },

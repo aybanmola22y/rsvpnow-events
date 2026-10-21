@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Build Your Event" };
+export const metadata: Metadata = pageMetadata({
+  title: "Build Your Event",
+  description:
+    "Build your Singapore event with RSVPNow — choose the format, guest count, and style, then request a tailored proposal from our planning team.",
+  path: "/build-event",
+  keywords: ["plan an event Singapore", "custom event planner"],
+});
 
 const BuildEventWizard = dynamic(
   () =>
