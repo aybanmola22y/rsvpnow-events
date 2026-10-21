@@ -7,7 +7,8 @@ export function getSiteUrl(): string {
   if (fromEnv) return fromEnv;
   const fromWebsite = seedSettings.website?.trim().replace(/\/$/, "");
   if (fromWebsite) return fromWebsite;
-  return "https://rsvpnowevents.com";
+  // Prefer www — apex redirects to www in production.
+  return "https://www.rsvpnowevents.com";
 }
 
 export const siteName = seedSettings.companyName || "RSVPNow";
