@@ -293,23 +293,27 @@ export function SettingsAdmin() {
             ) : null}
           </aside>
           <section className="rounded-lg border border-red-200 bg-white p-5">
-            <h2 className="text-sm font-semibold text-neutral-950">Reset demo data</h2>
-            <p className="mt-1 text-sm leading-relaxed text-neutral-500">Puts the sample rooms, inquiries, proposals, and this copy back to the original set.</p>
-            <Button className="mt-4" variant="destructive" onClick={() => setConfirm(true)}>Reset demo data</Button>
+            <h2 className="text-sm font-semibold text-neutral-950">Clear workspace data</h2>
+            <p className="mt-1 text-sm leading-relaxed text-neutral-500">
+              Remove venues, packages, inquiries, bookings, and other records saved in this browser. Company settings stay.
+            </p>
+            <Button className="mt-4" variant="destructive" onClick={() => setConfirm(true)}>
+              Clear all data
+            </Button>
           </section>
         </div>
       </div>
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
-        title="Reset demo data?"
-        description="This replaces everything saved in this browser with the original sample."
-        confirmLabel="Reset"
+        title="Clear all workspace data?"
+        description="This deletes sample and saved records in this browser. Company settings are kept. You can add real data again afterward."
+        confirmLabel="Clear"
         destructive
         onConfirm={() => {
           resetDemo();
           form.reset(useDemoStore.getState().settings);
-          toast.success("Demo data restored.");
+          toast.success("Workspace data cleared.");
           setConfirm(false);
         }}
       />

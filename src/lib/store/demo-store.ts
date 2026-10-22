@@ -4,15 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { hoursBetween, nextCode, packagePrice, uid, uniqueSlug } from "@/lib/format";
 import { quoteTotals } from "@/lib/pricing";
-import { seedBookings, seedPayments } from "@/lib/mock-data/bookings";
-import { seedSettings, seedTestimonials } from "@/lib/mock-data/clients";
-import { seedGallery } from "@/lib/mock-data/gallery";
-import { seedInquiries } from "@/lib/mock-data/inquiries";
-import { seedPackages } from "@/lib/mock-data/packages";
-import { seedProposals } from "@/lib/mock-data/proposals";
-import { seedServices } from "@/lib/mock-data/services";
-import { createSeedData, seedActivity } from "@/lib/mock-data/seed";
-import { seedVenues } from "@/lib/mock-data/venues";
+import { createSeedData } from "@/lib/mock-data/seed";
 import type {
   ActivityLog,
   Booking,
@@ -573,141 +565,19 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: "rsvpnow-demo-v1",
-      version: 8,
-      migrate: (persisted) => {
-        const state = persisted as DemoData;
-        const eventTypes: Record<string, string> = {
-          Wedding: "Hotel ballroom",
-          Birthday: "Celebration",
-          Debut: "Celebration",
-          Corporate: "Corporate event",
-          Conference: "Corporate event",
-          Seminar: "Corporate event",
-          "Company Party": "Celebration",
-          "Private Celebration": "Celebration",
-        };
-        const mapType = (value: string) => eventTypes[value] ?? value;
-        const venuesById = new Map(seedVenues.map((venue) => [venue.id, venue]));
-        const packagesById = new Map(seedPackages.map((item) => [item.id, item]));
-        const servicesById = new Map(seedServices.map((service) => [service.id, service]));
-        const galleryById = new Map(seedGallery.map((item) => [item.id, item]));
-        const inquiriesById = new Map(seedInquiries.map((item) => [item.id, item]));
-        const bookingsById = new Map(seedBookings.map((item) => [item.id, item]));
-        const proposalsById = new Map(seedProposals.map((item) => [item.id, item]));
-        const paymentsById = new Map(seedPayments.map((item) => [item.id, item]));
-        const testimonialsById = new Map(seedTestimonials.map((item) => [item.id, item]));
-        const activityById = new Map(seedActivity.map((item) => [item.id, item]));
-
-        if (Array.isArray(state.venues)) {
-          state.venues = state.venues.map((venue) => {
-            const next = venuesById.get(venue.id);
-            if (!next) return { ...venue, eventTypes: venue.eventTypes.map(mapType) };
-            return {
-              ...venue,
-              images: next.images,
-              shortDescription: next.shortDescription,
-              description: next.description,
-              location: next.location,
-              amenities: next.amenities,
-              facilities: next.facilities,
-              eventTypes: next.eventTypes,
-              featured: next.featured,
-              published: next.published,
-            };
-          });
+      version: 9,
+      migrate: (persisted, fromVersion) => {
+        // v9: wipe all sample/demo records; keep company settings.
+        if (fromVersion < 9) {
+          const empty = createSeedData();
+          const prev = persisted as Partial<DemoData> | undefined;
+          return {
+            ...empty,
+            settings: { ...empty.settings, ...(prev?.settings ?? {}) },
+            users: empty.users,
+          };
         }
-        if (Array.isArray(state.packages)) {
-          state.packages = state.packages.map((item) => {
-            const next = packagesById.get(item.id);
-            if (!next) return { ...item, eventType: mapType(item.eventType) };
-            return {
-              ...item,
-              image: next.image,
-              name: next.name,
-              slug: next.slug,
-              description: next.description,
-              inclusions: next.inclusions,
-              exclusions: next.exclusions,
-              eventType: next.eventType,
-              featured: next.featured,
-              published: next.published,
-              archived: next.archived,
-            };
-          });
-        }
-        if (Array.isArray(state.services)) {
-          state.services = state.services.map((service) => {
-            const next = servicesById.get(service.id);
-            if (!next) return service;
-            const current = (service.description ?? "").toLowerCase();
-            const description = current.includes("ceremony") || current.includes("welcome area") ? next.description : service.description;
-            return { ...service, image: next.image, description };
-          });
-        }
-        if (Array.isArray(state.gallery)) {
-          state.gallery = state.gallery.map((item) => {
-            const next = galleryById.get(item.id);
-            return next ? { ...item, src: next.src, caption: next.caption, category: next.category } : item;
-          });
-        }
-        if (Array.isArray(state.inquiries)) {
-          state.inquiries = state.inquiries.map((item) => {
-            const next = inquiriesById.get(item.id);
-            if (!next) return { ...item, eventType: mapType(item.eventType) };
-            return {
-              ...item,
-              eventType: next.eventType,
-              theme: next.theme,
-              specialRequests: next.specialRequests,
-            };
-          });
-        }
-        if (Array.isArray(state.bookings)) {
-          state.bookings = state.bookings.map((item) => {
-            const next = bookingsById.get(item.id);
-            if (!next) return { ...item, eventType: mapType(item.eventType) };
-            return { ...item, eventName: next.eventName, eventType: next.eventType, notes: next.notes };
-          });
-        }
-        if (Array.isArray(state.proposals)) {
-          state.proposals = state.proposals.map((proposal) => {
-            const next = proposalsById.get(proposal.id);
-            if (!next) return proposal;
-            const lines = new Map(next.items.map((line) => [line.id, line]));
-            return {
-              ...proposal,
-              notes: next.notes,
-              items: proposal.items.map((line) => {
-                const updated = lines.get(line.id);
-                return updated ? { ...line, item: updated.item, description: updated.description } : line;
-              }),
-            };
-          });
-        }
-        if (Array.isArray(state.payments)) {
-          state.payments = state.payments.map((payment) => {
-            const next = paymentsById.get(payment.id);
-            return next ? { ...payment, notes: next.notes } : payment;
-          });
-        }
-        if (Array.isArray(state.testimonials)) {
-          state.testimonials = state.testimonials.map((item) => {
-            const next = testimonialsById.get(item.id);
-            if (!next) return { ...item, eventType: mapType(item.eventType) };
-            return { ...item, role: next.role, quote: next.quote, eventType: next.eventType };
-          });
-        }
-        if (Array.isArray(state.activity)) {
-          state.activity = state.activity.map((item) => {
-            const next = activityById.get(item.id);
-            return next ? { ...item, action: next.action } : item;
-          });
-        }
-        const about = state.settings?.companyDescription ?? "";
-        if (about.includes("dinner and dances") || about.includes("hotel ballrooms, celebrations, and event setups")) {
-          state.settings = { ...state.settings, companyDescription: seedSettings.companyDescription };
-        }
-        return state;
+        return persisted as DemoData;
       },
       skipHydration: true,
       partialize: (state) => ({
