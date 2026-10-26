@@ -163,6 +163,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             <div className="mt-4 flex flex-col gap-2 text-sm text-stone-300">
               <Link href="/services" className="hover:text-white">Services</Link>
               <Link href="/contact" className="hover:text-white">Contact</Link>
+              <Link href="/track" className="hover:text-white">Track quotation</Link>
               <Link href="/request-proposal" className="hover:text-white">Request a quotation</Link>
             </div>
           </div>

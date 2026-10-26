@@ -105,11 +105,17 @@ export function ProposalSuccess({ number }: { number: string }) {
       <p className="text-[11px] tracking-[0.22em] text-gold uppercase">Inquiry {number}</p>
       <h1 className="mt-3 font-display text-5xl">Proposal request submitted successfully.</h1>
       <p className="mt-4 max-w-xl text-stone-600">
-        Your reference number is <span className="font-medium text-ink">{number}</span>. Keep it for your conversation with RSVPNow.
+        Your reference number is <span className="font-medium text-ink">{number}</span>.
+        We also send a confirmation to your email with a link to track progress.
       </p>
-      <Button asChild className={`mt-8 ${publicButtonClass}`}>
-        <Link href="/">Return Home</Link>
-      </Button>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button asChild className={publicButtonClass}>
+          <Link href={`/track?ref=${encodeURIComponent(number)}`}>Track this request</Link>
+        </Button>
+        <Button asChild variant="outline" className="rounded-none border-stone-300">
+          <Link href="/">Return Home</Link>
+        </Button>
+      </div>
     </Container>
   );
 }

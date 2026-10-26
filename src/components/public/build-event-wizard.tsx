@@ -18,8 +18,10 @@ import { ProposalSuccess } from "@/components/public/contact-page";
 import { EVENT_RATES, formatRate, startingTotal } from "@/lib/event-rates";
 import { formatDate, formatTime, hoursBetween, wait } from "@/lib/format";
 import { estimateEvent } from "@/lib/pricing";
+import { isSupabaseEnabled } from "@/lib/supabase/env";
 import { useDemoStore } from "@/lib/store/demo-store";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const steps = [
   {
@@ -192,9 +194,9 @@ export function BuildEventWizard() {
       return;
     }
     setPending(true);
-    await wait();
+    setError("");
     const addressNote = `Company address: ${draft.companyAddress.trim()}`;
-    const inquiry = submitInquiry({
+    const payload = {
       fullName: draft.fullName.trim(),
       company: draft.company.trim(),
       email: draft.email.trim(),
@@ -220,10 +222,34 @@ export function BuildEventWizard() {
       budget: estimate.total,
       theme: "",
       specialRequests: `${addressNote}\nPrepared through Build Your Event.`,
-      source: "builder",
-    });
-    setPending(false);
-    setReference(inquiry.number);
+      source: "builder" as const,
+    };
+
+    try {
+      if (isSupabaseEnabled()) {
+        const response = await fetch("/api/inquiries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = (await response.json()) as { number?: string; error?: string };
+        if (!response.ok || !data.number) {
+          throw new Error(data.error || "Could not submit the inquiry.");
+        }
+        setReference(data.number);
+        return;
+      }
+
+      await wait();
+      const inquiry = submitInquiry(payload);
+      setReference(inquiry.number);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Could not submit the inquiry.";
+      setError(text);
+      toast.error(text);
+    } finally {
+      setPending(false);
+    }
   }
 
   if (reference) return <ProposalSuccess number={reference} />;

@@ -85,7 +85,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const settings = useDemoStore((state) => state.settings);
   const session = useSessionStore((state) => state.session);
   const logout = useSessionStore((state) => state.logout);
-  const router = useRouter();
 
   return (
     <div className="flex h-full flex-col bg-[#111111] text-white">
@@ -133,10 +132,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           type="button"
           className="mt-3 flex items-center gap-2 text-sm text-white/70 hover:text-white"
           onClick={() => {
-            logout();
-            toast.success("Signed out.");
-            router.replace("/admin/login");
             onNavigate?.();
+            void (async () => {
+              await logout();
+              toast.success("Signed out.");
+              // Hard navigation after cookie clear — avoids middleware bounce loop.
+              window.location.assign("/admin/login");
+            })();
           }}
         >
           <LogOut className="size-4" />
@@ -156,8 +158,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const data = useDemoStore();
 
   useEffect(() => {
-    if (ready && !session) router.replace("/admin/login");
-  }, [ready, session, router]);
+    if (ready && !session) {
+      // Hard nav so a leftover auth cookie can't soft-redirect us in a loop.
+      window.location.replace("/admin/login");
+    }
+  }, [ready, session]);
 
   useEffect(() => {
     document.body.classList.add("admin-studio");

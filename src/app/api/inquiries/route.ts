@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { sendInquiryReceivedEmails } from "@/lib/email/inquiry-emails";
 import { getClientIp } from "@/lib/security/request-ip";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import { assertSafeText, sanitizeText } from "@/lib/security/sanitize";
@@ -129,6 +130,19 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: "Could not save the inquiry." }, { status: 500, headers: limitHeaders });
   }
+
+  // Confirmation to customer + alert to staff (non-blocking for the guest).
+  void sendInquiryReceivedEmails({
+    number: data.number,
+    fullName: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    company: input.company,
+    eventType: input.eventType,
+    eventDate: input.eventDate,
+    guestCount: input.guestCount,
+    status: "NEW",
+  }).catch((err) => console.error("[inquiry emails]", err));
 
   return NextResponse.json({ id: data.id, number: data.number }, { status: 201, headers: limitHeaders });
 }

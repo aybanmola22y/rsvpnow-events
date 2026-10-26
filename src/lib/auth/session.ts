@@ -19,7 +19,8 @@ type SessionState = {
   applySession: (session: DemoSession) => void;
   /** @deprecated Prefer server /api/auth/login — kept for compatibility */
   login: (email: string, password: string) => boolean;
-  logout: () => void;
+  /** Clears local session + httpOnly cookie. Await before navigating to login. */
+  logout: () => Promise<void>;
 };
 
 function readSession(): DemoSession | null {
@@ -63,10 +64,16 @@ export const useSessionStore = create<SessionState>((set) => ({
     void password;
     return false;
   },
-  logout: () => {
+  logout: async () => {
+    // Clear httpOnly cookie first while UI still has a session, so middleware
+    // won't bounce /admin/login → /admin (which hung on "Checking access…").
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+    } catch {
+      // Best-effort; still clear local state below.
+    }
     window.localStorage.removeItem(SESSION_KEY);
     clearStaffAuthCookie();
-    void fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     set({ session: null, ready: true });
   },
 }));
