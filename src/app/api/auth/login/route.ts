@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_STAFF, verifyDemoStaff } from "@/lib/auth/demo-credentials";
+import { getStaffCredentials, verifyDemoStaff } from "@/lib/auth/demo-credentials";
 import { STAFF_AUTH_COOKIE } from "@/lib/auth/constants";
 import {
   clearLoginFailures,
@@ -94,10 +94,18 @@ export async function POST(request: Request) {
 
   clearLoginFailures(lockKey);
 
+  const staff = getStaffCredentials();
+  if (!staff.password) {
+    return NextResponse.json(
+      { error: "Staff login is not configured. Set STAFF_PASSWORD in the server environment." },
+      { status: 503, headers: limitHeaders },
+    );
+  }
+
   const session = {
-    email: DEMO_STAFF.email,
-    name: DEMO_STAFF.name,
-    role: DEMO_STAFF.role,
+    email: staff.email,
+    name: staff.name,
+    role: staff.role,
   };
 
   const response = NextResponse.json({ ok: true, session }, { status: 200, headers: limitHeaders });

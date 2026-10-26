@@ -5,14 +5,6 @@ import { clearStaffAuthCookie, setStaffAuthCookie } from "@/lib/auth/cookie";
 
 const SESSION_KEY = "aurelia-demo-session";
 
-/** Public demo hint shown on the login screen (password still verified server-side). */
-export const DEMO_ADMIN = {
-  email: "admin@eventdemo.com",
-  password: "admin123",
-  name: "Ava Mendoza",
-  role: "Administrator",
-};
-
 export type DemoSession = {
   email: string;
   name: string;

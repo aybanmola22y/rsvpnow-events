@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/shared/chrome";
 import { TurnstileWidget } from "@/components/public/turnstile-widget";
-import { DEMO_ADMIN, useSessionStore } from "@/lib/auth/session";
-import { seedSettings, seedUsers } from "@/lib/mock-data/clients";
+import { useSessionStore } from "@/lib/auth/session";
+import { seedSettings } from "@/lib/mock-data/clients";
 import { shouldShowTurnstile } from "@/lib/turnstile/env";
 
 const GATE_KEY = "rsvpnow-admin-turnstile";
@@ -39,7 +39,7 @@ function writeGatePassed() {
 }
 
 const schema = z.object({
-  email: z.email("Enter the demo email"),
+  email: z.email("Enter a valid email"),
   password: z.string().min(1, "Enter the password"),
 });
 
@@ -163,12 +163,6 @@ export function LoginForm() {
     }
   }
 
-  function signInAsDemo() {
-    form.setValue("email", DEMO_ADMIN.email, { shouldValidate: true });
-    form.setValue("password", DEMO_ADMIN.password, { shouldValidate: true });
-    void onSubmit({ email: DEMO_ADMIN.email, password: DEMO_ADMIN.password });
-  }
-
   return (
     <div className="grid min-h-screen bg-[#f4f5f7] lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
       <div className="relative lg:min-h-screen">
@@ -211,16 +205,8 @@ export function LoginForm() {
           </div>
 
           <div className="mt-8 border-t border-white/15 pt-4">
-            <p className="text-[11px] font-medium tracking-[0.14em] text-white/45 uppercase">On the desk</p>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-3">
-              {seedUsers.map((person) => (
-                <li key={person.id}>
-                  <p className="text-sm font-semibold">{person.name}</p>
-                  <p className="text-xs text-white/60">{person.role}</p>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-xs leading-relaxed text-white/55">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-white/45 uppercase">Studio</p>
+            <p className="mt-3 text-xs leading-relaxed text-white/55">
               {seedSettings.address} · {seedSettings.businessHours} · {seedSettings.email}
             </p>
           </div>
@@ -276,24 +262,6 @@ export function LoginForm() {
             <Button type="submit" disabled={pending} className="mt-6 h-11 w-full bg-neutral-950 text-white hover:bg-neutral-800">
               {pending ? "Signing in..." : "Sign in"}
             </Button>
-            <div className="mt-6 rounded-lg border border-black/5 bg-[#f4f5f7] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-400 uppercase">Demo account</p>
-                  <p className="mt-1.5 font-semibold text-neutral-950">{DEMO_ADMIN.name}</p>
-                  <p className="text-sm text-neutral-500">{DEMO_ADMIN.role} · the only login in this demo</p>
-                </div>
-              </div>
-              <dl className="mt-3 grid grid-cols-[5.5rem_1fr] gap-y-1 text-sm">
-                <dt className="text-neutral-400">Email</dt>
-                <dd className="font-medium text-neutral-950">{DEMO_ADMIN.email}</dd>
-                <dt className="text-neutral-400">Password</dt>
-                <dd className="font-medium text-neutral-950">{DEMO_ADMIN.password}</dd>
-              </dl>
-              <Button type="button" variant="outline" disabled={pending} onClick={signInAsDemo} className="mt-4 h-10 w-full border-black/10 bg-white">
-                Sign in as {DEMO_ADMIN.name}
-              </Button>
-            </div>
             <p className="mt-5 text-center text-sm text-neutral-500">
               <Link href="/" className="font-medium text-neutral-950 underline-offset-4 hover:underline">Back to the public site</Link>
             </p>

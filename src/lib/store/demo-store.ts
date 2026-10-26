@@ -80,7 +80,7 @@ function paymentStatusFor(paid: number, total: number): PaymentStatus {
 
 function log(
   action: string,
-  actor = "Ava Mendoza",
+  actor = "RSVPNow Admin",
   entityType?: string,
   entityId?: string,
 ): ActivityLog {
@@ -200,14 +200,14 @@ export const useDemoStore = create<DemoStore>()(
         };
         set((state) => ({
           venues: [venue, ...state.venues],
-          activity: withLog(state.activity, log(`Created venue ${venue.name}.`, "Ava Mendoza", "venue", venue.id)),
+          activity: withLog(state.activity, log(`Created venue ${venue.name}.`, "RSVPNow Admin", "venue", venue.id)),
         }));
         return venue;
       },
       updateVenue: (id, patch) =>
         set((state) => ({
           venues: state.venues.map((venue) => (venue.id === id ? { ...venue, ...patch, id } : venue)),
-          activity: withLog(state.activity, log("Updated a venue.", "Ava Mendoza", "venue", id)),
+          activity: withLog(state.activity, log("Updated a venue.", "RSVPNow Admin", "venue", id)),
         })),
       deleteVenue: (id) =>
         set((state) => ({
@@ -216,7 +216,7 @@ export const useDemoStore = create<DemoStore>()(
             ...item,
             venueIds: item.venueIds.filter((venueId) => venueId !== id),
           })),
-          activity: withLog(state.activity, log("Deleted a venue.", "Ava Mendoza", "venue", id)),
+          activity: withLog(state.activity, log("Deleted a venue.", "RSVPNow Admin", "venue", id)),
         })),
       duplicateVenue: (id) => {
         const source = get().venues.find((venue) => venue.id === id);
@@ -238,7 +238,7 @@ export const useDemoStore = create<DemoStore>()(
           packages: [eventPackage, ...state.packages],
           activity: withLog(
             state.activity,
-            log(`Created package ${eventPackage.name}.`, "Ava Mendoza", "package", eventPackage.id),
+            log(`Created package ${eventPackage.name}.`, "RSVPNow Admin", "package", eventPackage.id),
           ),
         }));
         return eventPackage;
@@ -246,12 +246,12 @@ export const useDemoStore = create<DemoStore>()(
       updatePackage: (id, patch) =>
         set((state) => ({
           packages: state.packages.map((item) => (item.id === id ? { ...item, ...patch, id } : item)),
-          activity: withLog(state.activity, log("Updated a package.", "Ava Mendoza", "package", id)),
+          activity: withLog(state.activity, log("Updated a package.", "RSVPNow Admin", "package", id)),
         })),
       deletePackage: (id) =>
         set((state) => ({
           packages: state.packages.filter((item) => item.id !== id),
-          activity: withLog(state.activity, log("Deleted a package.", "Ava Mendoza", "package", id)),
+          activity: withLog(state.activity, log("Deleted a package.", "RSVPNow Admin", "package", id)),
         })),
       duplicatePackage: (id) => {
         const source = get().packages.find((item) => item.id === id);
@@ -272,19 +272,19 @@ export const useDemoStore = create<DemoStore>()(
         };
         set((state) => ({
           services: [service, ...state.services],
-          activity: withLog(state.activity, log(`Created service ${service.name}.`, "Ava Mendoza", "service", service.id)),
+          activity: withLog(state.activity, log(`Created service ${service.name}.`, "RSVPNow Admin", "service", service.id)),
         }));
         return service;
       },
       updateService: (id, patch) =>
         set((state) => ({
           services: state.services.map((item) => (item.id === id ? { ...item, ...patch, id } : item)),
-          activity: withLog(state.activity, log("Updated a service.", "Ava Mendoza", "service", id)),
+          activity: withLog(state.activity, log("Updated a service.", "RSVPNow Admin", "service", id)),
         })),
       deleteService: (id) =>
         set((state) => ({
           services: state.services.filter((item) => item.id !== id),
-          activity: withLog(state.activity, log("Deleted a service.", "Ava Mendoza", "service", id)),
+          activity: withLog(state.activity, log("Deleted a service.", "RSVPNow Admin", "service", id)),
         })),
       duplicateService: (id) => {
         const source = get().services.find((item) => item.id === id);
@@ -323,12 +323,12 @@ export const useDemoStore = create<DemoStore>()(
       setInquiryStatus: (id, status) =>
         set((state) => ({
           inquiries: state.inquiries.map((item) => (item.id === id ? { ...item, status } : item)),
-          activity: withLog(state.activity, log(`Inquiry status set to ${status}.`, "Ava Mendoza", "inquiry", id)),
+          activity: withLog(state.activity, log(`Inquiry status set to ${status}.`, "RSVPNow Admin", "inquiry", id)),
         })),
       assignInquiry: (id, staff) =>
         set((state) => ({
           inquiries: state.inquiries.map((item) => (item.id === id ? { ...item, assignedStaff: staff } : item)),
-          activity: withLog(state.activity, log(`Assigned ${staff} to an inquiry.`, "Ava Mendoza", "inquiry", id)),
+          activity: withLog(state.activity, log(`Assigned ${staff} to an inquiry.`, "RSVPNow Admin", "inquiry", id)),
         })),
       createProposalFromInquiry: (inquiryId) => {
         const existing = get().proposals.find((item) => item.inquiryId === inquiryId);
@@ -364,7 +364,7 @@ export const useDemoStore = create<DemoStore>()(
           ),
           activity: withLog(
             state.activity,
-            log(`Created proposal ${proposal.number}.`, "Ava Mendoza", "proposal", proposal.id),
+            log(`Created proposal ${proposal.number}.`, "RSVPNow Admin", "proposal", proposal.id),
           ),
         }));
         return { proposal, created: true };
@@ -374,7 +374,7 @@ export const useDemoStore = create<DemoStore>()(
           proposals: state.proposals.map((item) =>
             item.id === id ? { ...item, ...patch, id, updatedAt: new Date().toISOString() } : item,
           ),
-          activity: withLog(state.activity, log("Saved a proposal.", "Ava Mendoza", "proposal", id)),
+          activity: withLog(state.activity, log("Saved a proposal.", "RSVPNow Admin", "proposal", id)),
         })),
       setProposalStatus: (id, status) => {
         const current = get().proposals.find((item) => item.id === id);
@@ -397,7 +397,7 @@ export const useDemoStore = create<DemoStore>()(
                 item.id === current.inquiryId ? { ...item, status: inquiryStatus } : item,
               )
             : state.inquiries,
-          activity: withLog(state.activity, log(`Proposal marked ${status}.`, "Ava Mendoza", "proposal", id)),
+          activity: withLog(state.activity, log(`Proposal marked ${status}.`, "RSVPNow Admin", "proposal", id)),
         }));
         return next;
       },
@@ -441,7 +441,7 @@ export const useDemoStore = create<DemoStore>()(
           ),
           activity: withLog(
             state.activity,
-            log(`Created booking ${booking.number} from ${proposal.number}.`, "Ava Mendoza", "booking", booking.id),
+            log(`Created booking ${booking.number} from ${proposal.number}.`, "RSVPNow Admin", "booking", booking.id),
           ),
         }));
         return { booking, created: true };
@@ -453,12 +453,12 @@ export const useDemoStore = create<DemoStore>()(
             const next = { ...booking, ...patch, id };
             return { ...next, paymentStatus: paymentStatusFor(next.paid, next.total) };
           }),
-          activity: withLog(state.activity, log("Updated a booking.", "Ava Mendoza", "booking", id)),
+          activity: withLog(state.activity, log("Updated a booking.", "RSVPNow Admin", "booking", id)),
         })),
       setBookingStatus: (id, status) =>
         set((state) => ({
           bookings: state.bookings.map((booking) => (booking.id === id ? { ...booking, status } : booking)),
-          activity: withLog(state.activity, log(`Booking status set to ${status}.`, "Ava Mendoza", "booking", id)),
+          activity: withLog(state.activity, log(`Booking status set to ${status}.`, "RSVPNow Admin", "booking", id)),
         })),
       recordPayment: (input) => {
         const booking = get().bookings.find((item) => item.id === input.bookingId);
@@ -485,7 +485,7 @@ export const useDemoStore = create<DemoStore>()(
           ),
           activity: withLog(
             state.activity,
-            log(`Recorded payment ${payment.number}.`, "Ava Mendoza", "booking", booking.id),
+            log(`Recorded payment ${payment.number}.`, "RSVPNow Admin", "booking", booking.id),
           ),
         }));
         return payment;
@@ -494,20 +494,20 @@ export const useDemoStore = create<DemoStore>()(
         const client: Client = { ...input, id: uid("cli"), createdAt: new Date().toISOString() };
         set((state) => ({
           clients: [client, ...state.clients],
-          activity: withLog(state.activity, log(`Added client ${client.name}.`, "Ava Mendoza", "client", client.id)),
+          activity: withLog(state.activity, log(`Added client ${client.name}.`, "RSVPNow Admin", "client", client.id)),
         }));
         return client;
       },
       updateClient: (id, patch) =>
         set((state) => ({
           clients: state.clients.map((client) => (client.id === id ? { ...client, ...patch, id } : client)),
-          activity: withLog(state.activity, log("Updated a client.", "Ava Mendoza", "client", id)),
+          activity: withLog(state.activity, log("Updated a client.", "RSVPNow Admin", "client", id)),
         })),
       addGalleryItem: (input) => {
         const item: GalleryItem = { ...input, id: uid("gal") };
         set((state) => ({
           gallery: [item, ...state.gallery],
-          activity: withLog(state.activity, log("Added a gallery image.", "Ava Mendoza", "gallery", item.id)),
+          activity: withLog(state.activity, log("Added a gallery image.", "RSVPNow Admin", "gallery", item.id)),
         }));
         return item;
       },
@@ -518,13 +518,13 @@ export const useDemoStore = create<DemoStore>()(
       deleteGalleryItem: (id) =>
         set((state) => ({
           gallery: state.gallery.filter((item) => item.id !== id),
-          activity: withLog(state.activity, log("Removed a gallery image.", "Ava Mendoza", "gallery", id)),
+          activity: withLog(state.activity, log("Removed a gallery image.", "RSVPNow Admin", "gallery", id)),
         })),
       addTestimonial: (input) => {
         const item: Testimonial = { ...input, id: uid("tes") };
         set((state) => ({
           testimonials: [item, ...state.testimonials],
-          activity: withLog(state.activity, log("Added a testimonial.", "Ava Mendoza", "testimonial", item.id)),
+          activity: withLog(state.activity, log("Added a testimonial.", "RSVPNow Admin", "testimonial", item.id)),
         }));
         return item;
       },
@@ -535,7 +535,7 @@ export const useDemoStore = create<DemoStore>()(
       deleteTestimonial: (id) =>
         set((state) => ({
           testimonials: state.testimonials.filter((item) => item.id !== id),
-          activity: withLog(state.activity, log("Deleted a testimonial.", "Ava Mendoza", "testimonial", id)),
+          activity: withLog(state.activity, log("Deleted a testimonial.", "RSVPNow Admin", "testimonial", id)),
         })),
       updateSettings: (patch) =>
         set((state) => ({
@@ -546,7 +546,7 @@ export const useDemoStore = create<DemoStore>()(
         const user: StaffUser = { ...input, id: uid("usr"), status: input.status ?? "Invited" };
         set((state) => ({
           users: [...state.users, user],
-          activity: withLog(state.activity, log(`Invited ${user.email}.`, "Ava Mendoza", "user", user.id)),
+          activity: withLog(state.activity, log(`Invited ${user.email}.`, "RSVPNow Admin", "user", user.id)),
         }));
         return user;
       },
@@ -565,15 +565,21 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: "rsvpnow-demo-v1",
-      version: 9,
+      version: 10,
       migrate: (persisted, fromVersion) => {
-        // v9: wipe all sample/demo records; keep company settings.
+        const empty = createSeedData();
+        const prev = persisted as Partial<DemoData> | undefined;
+        // v9: wipe sample records. v10: refresh staff user to real admin email.
         if (fromVersion < 9) {
-          const empty = createSeedData();
-          const prev = persisted as Partial<DemoData> | undefined;
           return {
             ...empty,
             settings: { ...empty.settings, ...(prev?.settings ?? {}) },
+            users: empty.users,
+          };
+        }
+        if (fromVersion < 10) {
+          return {
+            ...(prev as DemoData),
             users: empty.users,
           };
         }

@@ -20,9 +20,13 @@ export const seedClients: Client[] = [
 ];
 
 export const seedUsers: StaffUser[] = [
-  { id: "usr-ava", name: "Ava Mendoza", email: "admin@eventdemo.com", role: "Administrator", status: "Active" },
-  { id: "usr-marco", name: "Marco Santos", email: "marco.santos@rsvpnowevents.com", role: "Events Manager", status: "Active" },
-  { id: "usr-liza", name: "Liza Cruz", email: "liza.cruz@rsvpnowevents.com", role: "Sales Lead", status: "Active" },
+  {
+    id: "usr-admin",
+    name: "RSVPNow Admin",
+    email: "rsvpnowevents@novanorthsg.com",
+    role: "Administrator",
+    status: "Active",
+  },
 ];
 
 export const seedSettings: WebsiteSettings = {

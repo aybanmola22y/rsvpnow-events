@@ -1,15 +1,20 @@
-/** Server-side demo staff credentials. Do not import password into new client UI. */
-export const DEMO_STAFF = {
-  email: "admin@eventdemo.com",
-  password: "admin123",
-  name: "Ava Mendoza",
-  role: "Administrator",
-} as const;
+/**
+ * Staff login credentials (server-only).
+ * Set STAFF_EMAIL / STAFF_PASSWORD / STAFF_NAME in .env (and Vercel).
+ */
+export function getStaffCredentials() {
+  const email = (
+    process.env.STAFF_EMAIL?.trim() || "rsvpnowevents@novanorthsg.com"
+  ).toLowerCase();
+  const password = process.env.STAFF_PASSWORD?.trim() || "";
+  const name = process.env.STAFF_NAME?.trim() || "RSVPNow Admin";
+  const role = "Administrator";
+  return { email, password, name, role };
+}
 
 export function verifyDemoStaff(email: string, password: string) {
+  const staff = getStaffCredentials();
+  if (!staff.password) return false;
   const normalized = email.trim().toLowerCase();
-  return (
-    normalized === DEMO_STAFF.email &&
-    password === DEMO_STAFF.password
-  );
+  return normalized === staff.email && password === staff.password;
 }
