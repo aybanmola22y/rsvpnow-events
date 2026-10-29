@@ -152,6 +152,18 @@ create table if not exists public.contact_messages (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.inquiry_messages (
+  id uuid primary key default gen_random_uuid(),
+  inquiry_id uuid not null references public.inquiries (id) on delete cascade,
+  sender text not null check (sender in ('customer', 'staff')),
+  sender_name text not null default '',
+  body text not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists inquiry_messages_inquiry_id_created_at_idx
+  on public.inquiry_messages (inquiry_id, created_at);
+
 create table if not exists public.proposals (
   id uuid primary key default gen_random_uuid(),
   number text not null unique default '',
@@ -322,6 +334,7 @@ alter table public.services enable row level security;
 alter table public.packages enable row level security;
 alter table public.inquiries enable row level security;
 alter table public.contact_messages enable row level security;
+alter table public.inquiry_messages enable row level security;
 alter table public.proposals enable row level security;
 alter table public.bookings enable row level security;
 alter table public.payments enable row level security;
@@ -339,7 +352,7 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename in (
-        'clients','venues','services','packages','inquiries','contact_messages',
+        'clients','venues','services','packages','inquiries','contact_messages','inquiry_messages',
         'proposals','bookings','payments','staff_profiles','website_settings','activity_logs'
       )
   loop
@@ -378,6 +391,8 @@ create policy "Staff manage packages" on public.packages for all using (public.i
 create policy "Staff read inquiries" on public.inquiries for select using (public.is_staff());
 create policy "Staff update inquiries" on public.inquiries for update using (public.is_staff()) with check (public.is_staff());
 create policy "Staff read contact messages" on public.contact_messages for select using (public.is_staff());
+create policy "Staff read inquiry messages" on public.inquiry_messages for select using (public.is_staff());
+create policy "Staff insert inquiry messages" on public.inquiry_messages for insert with check (public.is_staff());
 create policy "Staff manage proposals" on public.proposals for all using (public.is_staff()) with check (public.is_staff());
 create policy "Staff manage bookings" on public.bookings for all using (public.is_staff()) with check (public.is_staff());
 create policy "Staff manage payments" on public.payments for all using (public.is_staff()) with check (public.is_staff());
@@ -393,6 +408,7 @@ grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 grant select, insert on public.inquiries to anon, authenticated;
 grant select, insert on public.contact_messages to anon, authenticated;
+grant select, insert on public.inquiry_messages to authenticated;
 grant select on public.venues, public.services, public.packages, public.website_settings to anon, authenticated;
 
 -- =============================================================================

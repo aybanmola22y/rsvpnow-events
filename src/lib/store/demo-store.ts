@@ -49,10 +49,13 @@ type DemoStore = DemoData & {
   duplicateService: (id: string) => Service | null;
   submitInquiry: (input: InquiryInput) => Inquiry;
   updateInquiry: (id: string, patch: Partial<Inquiry>) => void;
+  deleteInquiry: (id: string) => void;
+  replaceInquiries: (inquiries: Inquiry[]) => void;
   setInquiryStatus: (id: string, status: InquiryStatus) => void;
   assignInquiry: (id: string, staff: string) => void;
   createProposalFromInquiry: (inquiryId: string) => { proposal: Proposal; created: boolean } | null;
   updateProposal: (id: string, patch: Partial<Proposal>) => void;
+  deleteProposal: (id: string) => void;
   setProposalStatus: (id: string, status: ProposalStatus) => Proposal | null;
   convertProposalToBooking: (proposalId: string) => { booking: Booking; created: boolean } | null;
   updateBooking: (id: string, patch: Partial<Booking>) => void;
@@ -320,6 +323,28 @@ export const useDemoStore = create<DemoStore>()(
         set((state) => ({
           inquiries: state.inquiries.map((item) => (item.id === id ? { ...item, ...patch, id } : item)),
         })),
+      deleteInquiry: (id) =>
+        set((state) => {
+          const removed = state.inquiries.find((item) => item.id === id);
+          return {
+            inquiries: state.inquiries.filter((item) => item.id !== id),
+            proposals: state.proposals.map((proposal) =>
+              proposal.inquiryId === id ? { ...proposal, inquiryId: "" } : proposal,
+            ),
+            activity: withLog(
+              state.activity,
+              log(
+                removed
+                  ? `Deleted inquiry ${removed.number}.`
+                  : "Deleted an inquiry.",
+                "RSVPNow Admin",
+                "inquiry",
+                id,
+              ),
+            ),
+          };
+        }),
+      replaceInquiries: (inquiries) => set({ inquiries }),
       setInquiryStatus: (id, status) =>
         set((state) => ({
           inquiries: state.inquiries.map((item) => (item.id === id ? { ...item, status } : item)),
@@ -376,6 +401,25 @@ export const useDemoStore = create<DemoStore>()(
           ),
           activity: withLog(state.activity, log("Saved a proposal.", "RSVPNow Admin", "proposal", id)),
         })),
+      deleteProposal: (id) =>
+        set((state) => {
+          const removed = state.proposals.find((item) => item.id === id);
+          return {
+            proposals: state.proposals.filter((item) => item.id !== id),
+            bookings: state.bookings.map((booking) =>
+              booking.proposalId === id ? { ...booking, proposalId: "" } : booking,
+            ),
+            activity: withLog(
+              state.activity,
+              log(
+                removed ? `Deleted proposal ${removed.number}.` : "Deleted a proposal.",
+                "RSVPNow Admin",
+                "proposal",
+                id,
+              ),
+            ),
+          };
+        }),
       setProposalStatus: (id, status) => {
         const current = get().proposals.find((item) => item.id === id);
         if (!current) return null;
@@ -565,11 +609,12 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: "rsvpnow-demo-v1",
-      version: 10,
+      version: 11,
       migrate: (persisted, fromVersion) => {
         const empty = createSeedData();
         const prev = persisted as Partial<DemoData> | undefined;
         // v9: wipe sample records. v10: refresh staff user to real admin email.
+        // v11: restore catalogue services after the v9 wipe left them empty.
         if (fromVersion < 9) {
           return {
             ...empty,
@@ -581,6 +626,13 @@ export const useDemoStore = create<DemoStore>()(
           return {
             ...(prev as DemoData),
             users: empty.users,
+            services: empty.services,
+          };
+        }
+        if (fromVersion < 11) {
+          return {
+            ...(prev as DemoData),
+            services: empty.services,
           };
         }
         return persisted as DemoData;

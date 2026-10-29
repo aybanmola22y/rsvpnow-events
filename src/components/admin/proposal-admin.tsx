@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -240,6 +241,7 @@ export function ProposalBuilder({ id }: { id: string }) {
   const client = useDemoStore((state) => state.clients.find((item) => item.id === proposal?.clientId));
   const settings = useDemoStore((state) => state.settings);
   const updateProposal = useDemoStore((state) => state.updateProposal);
+  const deleteProposal = useDemoStore((state) => state.deleteProposal);
   const setProposalStatus = useDemoStore((state) => state.setProposalStatus);
   const convertProposalToBooking = useDemoStore((state) => state.convertProposalToBooking);
   const existingBooking = useDemoStore((state) => state.bookings.find((item) => item.proposalId === id));
@@ -248,6 +250,7 @@ export function ProposalBuilder({ id }: { id: string }) {
   const [deposit, setDeposit] = useState(proposal?.depositPercent ?? 50);
   const [notes, setNotes] = useState(proposal?.notes ?? "");
   const [pending, setPending] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!proposal) return <p>Proposal not found.</p>;
   const current = proposal;
@@ -264,6 +267,25 @@ export function ProposalBuilder({ id }: { id: string }) {
     if (status) setProposalStatus(current.id, status);
   }
 
+  const status = current.status;
+  const editing =
+    status === "DRAFT" || status === "REVISED" || status === "FOR APPROVAL" || status === "APPROVED";
+  const waitingOnCustomer = status === "SENT";
+  const won = status === "ACCEPTED";
+  const lost = status === "DECLINED";
+
+  const nextStep = editing
+    ? "1. Edit the prices → 2. Save → 3. Send to the customer"
+    : waitingOnCustomer
+      ? "Waiting on the customer. Mark Accepted or Declined when they reply."
+      : won
+        ? existingBooking
+          ? "Proposal accepted. Open the booking when you need it."
+          : "Proposal accepted. Convert it to a booking next."
+        : lost
+          ? "Customer declined. Reopen as draft if you want to revise and resend."
+          : "";
+
   return (
     <div className="space-y-6">
       <div className="no-print">
@@ -273,23 +295,153 @@ export function ProposalBuilder({ id }: { id: string }) {
           description={inquiry ? `${inquiry.eventType} · ${formatDate(inquiry.eventDate)}` : proposal.status}
           actions={<StatusBadge status={proposal.status} />}
         />
+        <p className="mt-3 text-sm text-neutral-500">{nextStep}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button disabled={pending != null} onClick={() => void run("save", () => { persist(current.status === "DRAFT" ? "DRAFT" : undefined); toast.success("Draft saved."); })}>{pending === "save" ? "Saving..." : "Save Draft"}</Button>
-          <Button variant="outline" disabled={pending != null} onClick={() => void run("review", () => { persist("FOR APPROVAL"); toast.success("Submitted for approval."); })}>Submit for Approval</Button>
-          <Button variant="outline" disabled={pending != null} onClick={() => void run("approve", () => { persist("APPROVED"); toast.success("Proposal approved."); })}>Approve</Button>
-          <Button variant="outline" disabled={pending != null} onClick={() => void run("send", () => { persist("SENT"); toast.success("Proposal sent successfully (Demo Mode)."); })}>{pending === "send" ? "Sending..." : "Send Proposal"}</Button>
-          <Button variant="outline" onClick={() => window.print()}>Print</Button>
-          <Button variant="outline" disabled={pending != null} onClick={() => void run("accept", () => { persist("ACCEPTED"); toast.success("Proposal accepted."); })}>Accept Proposal</Button>
-          <Button variant="outline" disabled={pending != null} onClick={() => void run("decline", () => { persist("DECLINED"); toast.success("Proposal declined."); })}>Decline Proposal</Button>
-          <Button disabled={pending != null} onClick={() => void run("convert", () => {
-            persist();
-            const result = convertProposalToBooking(current.id);
-            if (!result) return;
-            toast.success(result.created ? "Booking created successfully." : "Booking already exists.");
-            router.push(`/admin/bookings/${result.booking.id}`);
-          })}>{existingBooking ? "View Booking" : pending === "convert" ? "Creating..." : "Convert to Booking"}</Button>
+          {editing ? (
+            <>
+              <Button
+                disabled={pending != null}
+                onClick={() =>
+                  void run("save", () => {
+                    persist(status === "DRAFT" || status === "REVISED" ? status : "DRAFT");
+                    toast.success("Saved.");
+                  })
+                }
+              >
+                {pending === "save" ? "Saving…" : "Save"}
+              </Button>
+              <Button
+                disabled={pending != null}
+                onClick={() =>
+                  void run("send", () => {
+                    persist("SENT");
+                    toast.success("Marked as sent to the customer.");
+                  })
+                }
+              >
+                {pending === "send" ? "Sending…" : "Send to customer"}
+              </Button>
+              <Button variant="outline" onClick={() => window.print()}>
+                Print
+              </Button>
+            </>
+          ) : null}
+
+          {waitingOnCustomer ? (
+            <>
+              <Button
+                disabled={pending != null}
+                onClick={() =>
+                  void run("accept", () => {
+                    persist("ACCEPTED");
+                    toast.success("Marked as accepted.");
+                  })
+                }
+              >
+                {pending === "accept" ? "Saving…" : "Customer accepted"}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={pending != null}
+                onClick={() =>
+                  void run("decline", () => {
+                    persist("DECLINED");
+                    toast.success("Marked as declined.");
+                  })
+                }
+              >
+                Customer declined
+              </Button>
+              <Button
+                variant="outline"
+                disabled={pending != null}
+                onClick={() =>
+                  void run("revise", () => {
+                    persist("DRAFT");
+                    toast.success("Reopened as draft.");
+                  })
+                }
+              >
+                Edit again
+              </Button>
+              <Button variant="outline" onClick={() => window.print()}>
+                Print
+              </Button>
+            </>
+          ) : null}
+
+          {won ? (
+            <>
+              <Button
+                disabled={pending != null}
+                onClick={() =>
+                  void run("convert", () => {
+                    persist();
+                    const result = convertProposalToBooking(current.id);
+                    if (!result) return;
+                    toast.success(result.created ? "Booking created." : "Opening existing booking.");
+                    router.push(`/admin/bookings/${result.booking.id}`);
+                  })
+                }
+              >
+                {existingBooking
+                  ? "View booking"
+                  : pending === "convert"
+                    ? "Creating…"
+                    : "Convert to booking"}
+              </Button>
+              <Button variant="outline" onClick={() => window.print()}>
+                Print
+              </Button>
+            </>
+          ) : null}
+
+          {lost ? (
+            <>
+              <Button
+                disabled={pending != null}
+                onClick={() =>
+                  void run("reopen", () => {
+                    persist("DRAFT");
+                    toast.success("Reopened as draft.");
+                  })
+                }
+              >
+                Reopen as draft
+              </Button>
+              <Button variant="outline" onClick={() => window.print()}>
+                Print
+              </Button>
+            </>
+          ) : null}
+
+          <Button
+            variant="destructive"
+            disabled={pending != null}
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete
+          </Button>
         </div>
       </div>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${current.number}?`}
+        description={
+          existingBooking
+            ? "This permanently removes the proposal. Linked bookings stay, but will no longer point to this proposal."
+            : "This permanently removes the proposal. This cannot be undone."
+        }
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          deleteProposal(current.id);
+          toast.success(`Deleted ${current.number}.`);
+          setDeleteOpen(false);
+          router.replace("/admin/proposals");
+        }}
+      />
       <article className="print-root border border-stone-200 bg-white p-6">
         <header className="flex items-start justify-between gap-4">
           <div>

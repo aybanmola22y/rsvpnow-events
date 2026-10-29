@@ -107,6 +107,33 @@ export type Database = {
         Update: Partial<InquiryInsert>;
         Relationships: [];
       };
+      inquiry_messages: {
+        Row: {
+          id: string;
+          inquiry_id: string;
+          sender: string;
+          sender_name: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          inquiry_id: string;
+          sender: string;
+          sender_name?: string;
+          body: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          inquiry_id?: string;
+          sender?: string;
+          sender_name?: string;
+          body?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       contact_messages: {
         Row: {
           id: string;

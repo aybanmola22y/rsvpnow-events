@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("inquiries")
     .select(
-      "number, full_name, email, event_type, event_date, guest_count, status, created_at",
+      "id, number, full_name, email, event_type, event_date, guest_count, status, created_at",
     )
     .eq("number", number)
     .ilike("email", email)
@@ -78,8 +78,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
+      id: data.id,
       number: data.number,
       fullName: data.full_name,
+      email: data.email,
       eventType: data.event_type,
       eventDate: data.event_date ?? "",
       guestCount: data.guest_count,

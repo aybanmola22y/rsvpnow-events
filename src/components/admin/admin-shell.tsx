@@ -182,12 +182,42 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const results = useMemo(
     () => [
-      ...data.clients.map((item) => ({ href: `/admin/clients/${item.id}`, group: "Clients", label: item.name, hint: item.email })),
-      ...data.inquiries.map((item) => ({ href: `/admin/inquiries/${item.id}`, group: "Inquiries", label: `${item.number} · ${item.fullName}`, hint: item.eventType })),
-      ...data.proposals.map((item) => ({ href: `/admin/proposals/${item.id}`, group: "Proposals", label: item.number, hint: item.status })),
-      ...data.bookings.map((item) => ({ href: `/admin/bookings/${item.id}`, group: "Bookings", label: `${item.number} · ${item.eventName}`, hint: item.eventDate })),
-      ...data.venues.map((item) => ({ href: `/admin/venues/${item.id}`, group: "Venues", label: item.name, hint: item.location })),
-      ...data.packages.map((item) => ({ href: `/admin/packages/${item.id}/edit`, group: "Packages", label: item.name, hint: item.eventType })),
+      ...data.clients.map((item) => ({
+        href: `/admin/clients/${item.id}`,
+        group: "Clients",
+        label: item.name,
+        hint: item.email,
+      })),
+      ...data.inquiries.map((item) => ({
+        href: `/admin/inquiries/${item.id}`,
+        group: "Inquiries",
+        label: `${item.number} · ${item.fullName}`,
+        hint: item.eventType,
+      })),
+      ...data.proposals.map((item) => ({
+        href: `/admin/proposals/${item.id}`,
+        group: "Proposals",
+        label: item.number,
+        hint: item.status,
+      })),
+      ...data.bookings.map((item) => ({
+        href: `/admin/bookings/${item.id}`,
+        group: "Bookings",
+        label: `${item.number} · ${item.eventName}`,
+        hint: item.eventDate,
+      })),
+      ...data.venues.map((item) => ({
+        href: `/admin/venues/${item.id}`,
+        group: "Venues",
+        label: item.name,
+        hint: item.location,
+      })),
+      ...data.packages.map((item) => ({
+        href: `/admin/packages/${item.id}/edit`,
+        group: "Packages",
+        label: item.name,
+        hint: item.eventType,
+      })),
     ],
     [data.clients, data.inquiries, data.proposals, data.bookings, data.venues, data.packages],
   );

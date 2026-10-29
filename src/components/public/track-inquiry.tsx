@@ -14,6 +14,7 @@ import {
   publicButtonClass,
   publicControlClass,
 } from "@/components/shared/chrome";
+import { InquiryChat } from "@/components/shared/inquiry-chat";
 import { TRACK_STEPS, trackStepIndex } from "@/lib/inquiry-track";
 import { formatDate, formatLabel } from "@/lib/format";
 import { isSupabaseEnabled } from "@/lib/supabase/env";
@@ -28,8 +29,10 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 type TrackResult = {
+  id?: string;
   number: string;
   fullName: string;
+  email?: string;
   eventType: string;
   eventDate: string;
   guestCount: number;
@@ -82,8 +85,10 @@ export function TrackInquiryPage() {
         throw new Error("No request found for that reference and email.");
       }
       setResult({
+        id: local.id,
         number: local.number,
         fullName: local.fullName,
+        email: local.email,
         eventType: local.eventType,
         eventDate: local.eventDate,
         guestCount: local.guestCount,
@@ -97,6 +102,9 @@ export function TrackInquiryPage() {
       setPending(false);
     }
   }
+
+  const trackedEmail = (result?.email || form.getValues("email") || "").trim().toLowerCase();
+  const canChat = Boolean(result && isSupabaseEnabled() && trackedEmail);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
@@ -146,6 +154,19 @@ export function TrackInquiryPage() {
                 {pending ? "Looking up…" : "Check progress"}
               </Button>
             </form>
+
+            {canChat && result ? (
+              <div className="mt-8">
+                <InquiryChat
+                  auth={{
+                    mode: "customer",
+                    number: result.number,
+                    email: trackedEmail,
+                  }}
+                  title="Message RSVPNow"
+                />
+              </div>
+            ) : null}
           </div>
 
           <aside className="border border-stone-200 bg-white p-6 lg:sticky lg:top-24">

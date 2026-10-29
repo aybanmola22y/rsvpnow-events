@@ -1,11 +1,35 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireStaffApi } from "@/lib/auth/staff-api";
+import { mapInquiryRow } from "@/lib/data/inquiries";
 import { sendInquiryReceivedEmails } from "@/lib/email/inquiry-emails";
 import { getClientIp } from "@/lib/security/request-ip";
 import { rateLimit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import { assertSafeText, sanitizeText } from "@/lib/security/sanitize";
 import { getSupabaseServiceRoleKey, isSupabaseEnabled } from "@/lib/supabase/env";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+
+/** Staff: list inquiries for the admin dashboard. */
+export async function GET() {
+  if (!(await requireStaffApi())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (!isSupabaseEnabled() || !getSupabaseServiceRoleKey()) {
+    return NextResponse.json({ error: "Supabase is not enabled." }, { status: 503 });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: "Could not load inquiries." }, { status: 500 });
+  }
+
+  return NextResponse.json({ inquiries: (data ?? []).map(mapInquiryRow) });
+}
 
 const LIMIT = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes

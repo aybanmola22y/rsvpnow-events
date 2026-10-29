@@ -7,7 +7,7 @@ export type RemoteInquiryResult = {
   number: string;
 };
 
-function mapRow(row: {
+export function mapInquiryRow(row: {
   id: string;
   number: string;
   full_name: string;
@@ -107,5 +107,5 @@ export async function listInquiriesRemote(): Promise<Inquiry[] | null> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map(mapRow);
+  return (data ?? []).map(mapInquiryRow);
 }

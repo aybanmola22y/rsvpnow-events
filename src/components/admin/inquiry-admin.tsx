@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/chrome";
 import { CurrencyDisplay } from "@/components/shared/currency";
+import { InquiryChat } from "@/components/shared/inquiry-chat";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { INQUIRY_STATUSES, type InquiryStatus } from "@/lib/types";
+import { INQUIRY_STATUSES, type Inquiry, type InquiryStatus } from "@/lib/types";
 import { formatDate, formatLabel, formatPeso, formatTime, wait } from "@/lib/format";
+import { isSupabaseEnabled } from "@/lib/supabase/env";
 import { useDemoStore } from "@/lib/store/demo-store";
+import { useSessionStore } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 
 const filters: { label: string; value: string }[] = [
@@ -45,8 +49,29 @@ export function InquiryAdminList() {
   const status = params.get("status");
   const inquiries = useDemoStore((state) => state.inquiries);
   const venues = useDemoStore((state) => state.venues);
+  const replaceInquiries = useDemoStore((state) => state.replaceInquiries);
   const [query, setQuery] = useState("");
   const today = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    if (!isSupabaseEnabled()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/inquiries", { credentials: "same-origin" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { inquiries?: Inquiry[] };
+        if (!cancelled && Array.isArray(data.inquiries)) {
+          replaceInquiries(data.inquiries);
+        }
+      } catch {
+        // Keep local store if remote sync fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [replaceInquiries]);
 
   const summary = useMemo(() => {
     const count = (values: InquiryStatus[]) => inquiries.filter((item) => values.includes(item.status)).length;
@@ -251,13 +276,39 @@ export function InquiryAdminDetail({ id }: { id: string }) {
   const proposals = useDemoStore((state) => state.proposals);
   const setInquiryStatus = useDemoStore((state) => state.setInquiryStatus);
   const assignInquiry = useDemoStore((state) => state.assignInquiry);
+  const deleteInquiry = useDemoStore((state) => state.deleteInquiry);
+  const replaceInquiries = useDemoStore((state) => state.replaceInquiries);
   const createProposalFromInquiry = useDemoStore((state) => state.createProposalFromInquiry);
+  const session = useSessionStore((state) => state.session);
   const router = useRouter();
   const [statusOpen, setStatusOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [status, setStatus] = useState<InquiryStatus>(inquiry?.status ?? "NEW");
   const [staff, setStaff] = useState(inquiry?.assignedStaff || users[0]?.name || "");
   const [pending, setPending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (inquiry || !isSupabaseEnabled()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/inquiries", { credentials: "same-origin" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { inquiries?: Inquiry[] };
+        if (!cancelled && Array.isArray(data.inquiries)) {
+          replaceInquiries(data.inquiries);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inquiry, replaceInquiries]);
+
   if (!inquiry) return <p>Inquiry not found.</p>;
   const record = inquiry;
   const existing = proposals.find((item) => item.inquiryId === record.id);
@@ -274,6 +325,30 @@ export function InquiryAdminDetail({ id }: { id: string }) {
     router.push(`/admin/proposals/${result.proposal.id}`);
   }
 
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      if (isSupabaseEnabled()) {
+        const response = await fetch(`/api/inquiries/${encodeURIComponent(record.id)}`, {
+          method: "DELETE",
+          credentials: "same-origin",
+        });
+        const data = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "Could not delete the inquiry.");
+        }
+      }
+      deleteInquiry(record.id);
+      toast.success(`Deleted ${record.number}.`);
+      setDeleteOpen(false);
+      router.replace("/admin/inquiries");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete the inquiry.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -286,6 +361,7 @@ export function InquiryAdminDetail({ id }: { id: string }) {
             <Button disabled={pending} onClick={() => void createProposal()}>{pending ? "Creating..." : existing ? "Open Proposal" : "Create Proposal"}</Button>
             <Button variant="outline" onClick={() => setAssignOpen(true)}>Assign Staff</Button>
             <Button variant="outline" onClick={() => { setInquiryStatus(inquiry.id, inquiry.status === "ARCHIVED" ? "NEW" : "ARCHIVED"); toast.success(inquiry.status === "ARCHIVED" ? "Inquiry restored." : "Inquiry archived."); }}>{inquiry.status === "ARCHIVED" ? "Restore" : "Archive"}</Button>
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>Delete</Button>
           </>
         }
       />
@@ -305,6 +381,20 @@ export function InquiryAdminDetail({ id }: { id: string }) {
         <div className="md:col-span-2"><Info label="Services" value={services.filter((service) => inquiry.serviceIds.includes(service.id)).map((service) => service.name).join(", ") || "None"} /></div>
         <div className="md:col-span-2"><Info label="Special requests" value={inquiry.specialRequests || "None"} /></div>
       </div>
+      {isSupabaseEnabled() ? (
+        <InquiryChat
+          auth={{
+            mode: "staff",
+            inquiryId: inquiry.id,
+            senderName: session?.name || "RSVPNow",
+          }}
+          title={`Chat · ${inquiry.number}`}
+        />
+      ) : (
+        <p className="rounded-lg border border-dashed border-stone-200 bg-white p-4 text-sm text-stone-500">
+          Enable Supabase to use quotation chat with customers.
+        </p>
+      )}
       <Dialog open={statusOpen} onOpenChange={setStatusOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit status</DialogTitle></DialogHeader>
@@ -329,6 +419,16 @@ export function InquiryAdminDetail({ id }: { id: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${inquiry.number}?`}
+        description="This permanently removes the quotation request. The customer will no longer be able to track it. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        pending={deleting}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }

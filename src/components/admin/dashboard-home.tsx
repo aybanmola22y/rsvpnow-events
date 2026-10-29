@@ -37,8 +37,8 @@ export function DashboardHome() {
   const cards = [
     { label: "New inquiries", value: newInquiries, hint: "Waiting on a first reply", href: "/admin/inquiries?status=NEW" },
     { label: "Pending proposals", value: pendingProposals, hint: "Drafts not yet accepted", href: "/admin/proposals?view=pending" },
-    { label: "Confirmed", value: confirmed, hint: "Dates held on the book", href: "/admin/bookings?status=Confirmed" },
-    { label: "Upcoming", value: upcoming, hint: "Events still ahead", href: "/admin/calendar" },
+    { label: "Confirmed bookings", value: confirmed, hint: "Dates held", href: "/admin/bookings?status=Confirmed" },
+    { label: "Upcoming events", value: upcoming, hint: "Still ahead", href: "/admin/calendar" },
   ];
 
   const latest = [...inquiries].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
@@ -47,7 +47,9 @@ export function DashboardHome() {
     <div className="min-w-0 space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-950">Dashboard</h1>
-        <p className="mt-1 text-sm text-neutral-500">Overview of inquiries, bookings, and what is on the book today.</p>
+        <p className="mt-1 text-sm text-neutral-500">
+          Quotation requests, proposals, and confirmed bookings.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
